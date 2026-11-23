@@ -1,0 +1,630 @@
+<title>Jiu-Jitsu Reel Storyboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500;62..125,800;62..125,900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: an edit-suite document. A narrow reading column for decisions, wide scene sheets that pair the real frame with the mockup, and a timeline band styled like a sequence panel. */
+:root {
+  --bg: #F5F4F3; --surface: #FFFFFF; --sunk: #ECEAE8; --fg: #171314; --muted: #675E60; --line: #DDD8D6;
+  --accent: #C81E17; --accent-ink: #FFFFFF; --real: #1F7A4D; --mock: #9A6A00; --mock-bg: #FFE7A8; --real-bg: #D8F0E2;
+  --clip: #3C5A8C; --fx: #C81E17; --cap: #6F6A6B; --music: #2F6E5A;
+  --f-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121011; --surface: #1B1819; --sunk: #0D0B0C; --fg: #EEEAEA; --muted: #A39A9C; --line: #2E292B;
+  --accent: #F0372E; --accent-ink: #FFFFFF; --real: #5BD49A; --mock: #FFC53D; --mock-bg: #3A2C05; --real-bg: #0F3324;
+  --clip: #5B7DB8; --fx: #E8342B; --cap: #8D8789; --music: #3F8F75; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121011; --surface: #1B1819; --sunk: #0D0B0C; --fg: #EEEAEA; --muted: #A39A9C; --line: #2E292B;
+  --accent: #F0372E; --accent-ink: #FFFFFF; --real: #5BD49A; --mock: #FFC53D; --mock-bg: #3A2C05; --real-bg: #0F3324;
+  --clip: #5B7DB8; --fx: #E8342B; --cap: #8D8789; --music: #3F8F75; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 80px; display: grid; gap: 56px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(34px, 6vw, 60px); font-weight: 900; font-stretch: 72%; line-height: .95; letter-spacing: -.01em; text-transform: uppercase; }
+h2 { font-size: clamp(22px, 3vw, 30px); font-weight: 800; font-stretch: 85%; text-transform: uppercase; letter-spacing: .01em; }
+h3 { font-size: 22px; font-weight: 800; font-stretch: 90%; }
+h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 4px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.mono { font-family: var(--f-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hero { display: grid; gap: 18px; }
+.status { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; padding: 6px 12px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); justify-self: start; }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.facts div { background: var(--surface); padding: 12px 14px; min-width: 0; }
+.facts dt { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.facts dd { margin: 2px 0 0; font-family: var(--f-mono); font-size: 14px; font-weight: 600; }
+section { display: grid; gap: 18px; }
+.sec-head { display: grid; gap: 6px; border-top: 2px solid var(--fg); padding-top: 12px; }
+.decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.decision { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.decision h3 { font-size: 17px; font-stretch: 100%; }
+.decision .sev { font-family: var(--f-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 600; }
+.decision ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+td, th { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+td.en, .en { color: var(--muted); }
+.timeline { background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+.timeline svg { min-width: 760px; width: 100%; height: auto; display: block; }
+.tl-lab { font: 600 11px var(--f-body); fill: var(--muted); }
+.tl-lane { fill: var(--surface); }
+.tl-clip { fill: var(--clip); } .tl-end { fill: var(--accent); } .tl-fx { fill: var(--fx); opacity: .85; }
+.tl-cap { fill: var(--cap); } .tl-hit { fill: var(--fg); } .tl-music { fill: var(--music); opacity: .8; }
+.tl-txt { font: 500 10px var(--f-mono); fill: #FFFFFF; } .tl-txt-on { font: 600 10px var(--f-mono); fill: #FFFFFF; }
+.tl-cut { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.tl-tick { stroke: var(--muted); } .tl-ruler { font: 500 10px var(--f-mono); fill: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.scenes { display: grid; gap: 28px; }
+.scene { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.scene-head { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.scene-id { font-family: var(--f-display); font-weight: 900; font-stretch: 70%; font-size: 40px; line-height: 1; color: var(--accent); }
+.scene-title { min-width: 0; display: grid; gap: 6px; }
+.fxrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--accent); color: var(--accent); }
+.tcs { margin: 0; display: grid; gap: 4px; text-align: right; }
+.tcs dt { display: inline; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-right: 8px; }
+.tcs dd { display: inline; margin: 0; }
+.scene-body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 22px; padding: 18px; }
+.frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-content: start; }
+figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+figure img { width: 100%; height: auto; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 8px; background: var(--sunk); }
+figure img.src { aspect-ratio: 292 / 632; object-fit: contain; }
+.frames { align-items: start; }
+figcaption { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tag { font-family: var(--f-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+.tag-real { background: var(--real-bg); color: var(--real); }
+.tag-mock { background: var(--mock-bg); color: var(--mock); }
+.tag-render { background: var(--sunk); color: var(--fg); border: 1px solid var(--line); }
+.notes { min-width: 0; }
+blockquote { margin: 0; padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--sunk); border-radius: 0 8px 8px 0; display: grid; gap: 4px; }
+blockquote p:first-child { font-weight: 600; font-size: 16px; }
+table.anim td:first-child { white-space: nowrap; color: var(--accent); }
+.specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.spec { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.spec h3 { font-size: 18px; font-stretch: 100%; }
+.spec ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; font-family: var(--f-mono); font-size: 12.5px; }
+.capdemo { background: #141112; border-radius: 8px; padding: 22px 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; font-family: "Inter", sans-serif; font-weight: 900; font-size: 26px; letter-spacing: -.01em; color: #FFFFFF; }
+.capdemo .k { background: #E8241C; padding: 0 8px; border-radius: 6px; transform: rotate(-2deg); display: inline-block; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.sw { display: grid; gap: 4px; font-size: 11px; font-family: var(--f-mono); color: var(--muted); }
+.sw i { width: 56px; height: 36px; border-radius: 6px; border: 1px solid var(--line); display: block; }
+.grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.state { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+.state.ok { background: var(--real-bg); color: var(--real); }
+.state.no { background: var(--sunk); color: var(--muted); border: 1px solid var(--line); }
+td.num { color: var(--muted); }
+ol.steps { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 80ch; }
+.approve { background: var(--surface); border: 2px solid var(--accent); border-radius: 12px; padding: 20px; display: grid; gap: 10px; }
+.approve ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 760px) {
+  .scene-head { grid-template-columns: auto 1fr; }
+  .tcs { grid-column: 1 / -1; text-align: left; }
+  .scene-body { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">Edit plan v1 · 9:16 short · Serbian dialogue</span>
+  <h1>Jiu-jitsu: sport vs. reality</h1>
+  <p>A storyboard for a 19.5-second vertical reel built from your clip. It covers the analysis, nine scenes with exact timecodes, 13 of the 20 requested effects, and the captions, sound, and grade. Nothing has been changed in Premiere Pro.</p>
+  <span class="status">Waiting for your approval</span>
+  <dl class="facts">
+    <div><dt>Source</dt><dd>19.07 s · 30 fps</dd></div>
+    <div><dt>Source size</dt><dd>292 × 632</dd></div>
+    <div><dt>Usable picture</dt><dd>≈ 201 × 357</dd></div>
+    <div><dt>Pauses cut</dt><dd>5 · 1.57 s</dd></div>
+    <div><dt>Planned length</dt><dd>19.50 s</dd></div>
+    <div><dt>Delivery</dt><dd>1080 × 1920</dd></div>
+  </dl>
+</header>
+
+<section id="decisions">
+  <div class="sec-head"><span class="eyebrow">Read first</span><h2>Four things that need you</h2></div>
+  <div class="decisions">
+    <div class="decision"><span class="sev">Blocker for execution</span><h3>Premiere Pro isn't reachable from this session</h3>
+      <p>This session runs in a cloud container. It has no Premiere Pro or MCP Bridge tools, and no computer is attached.</p>
+      <ul><li><b>Option A:</b> In the Claude desktop app, open Settings → Claude Code → Remote Control and share the project folder. I can then work on your machine where Premiere runs.</li>
+      <li><b>Option B (works now):</b> I build every layer here and give you a Premiere-importable XML timeline. That includes the cuts, keyframed zooms, alpha-channel motion graphics, SFX, captions (.srt), and a grade LUT, plus a finished MP4.</li></ul></div>
+    <div class="decision"><span class="sev">Quality ceiling</span><h3>The clip is a screen recording of an Instagram story</h3>
+      <p>The IG header, like rail, reply bar, and burned-in captions are all part of the pixels. After cropping them out, about 201 × 357 px is left, which means roughly a 5.4× upscale to 1080 × 1920.</p>
+      <ul><li><b>Best:</b> send the original podcast file. Every effect will look sharper and Studio Reveal becomes possible.</li>
+      <li><b>Fallback:</b> crop + Lanczos upscale + sharpening + grain (shown below). An AI video upscale through Higgsfield is possible but costs credits.</li></ul></div>
+    <div class="decision"><span class="sev">Assets</span><h3>B-roll and music</h3>
+      <ul><li><b>B-roll (S3–S4):</b> about 2 s of a flying armbar or jumping guard, ideally from your own gym. If there's no clip, I'll replace the portal content with a kinetic-type animation.</li>
+      <li><b>Music:</b> I can't download licensed tracks here. Pick a track from Premiere's Essential Sound or Adobe Stock (dark minimal trap, 95–100 BPM), or approve an original bed generated with Higgsfield (uses credits).</li>
+      <li><b>SFX:</b> I'll synthesise original whooshes, hits, pops, and the shatter, so no licensing is needed.</li></ul></div>
+    <div class="decision"><span class="sev">Rights</span><h3>Account on screen: gbbelgrade &amp; danijelbrajcic</h3>
+      <p>Please confirm you have the right to re-edit and repost this clip. The end card handle and CTA text are placeholders until you confirm them.</p></div>
+  </div>
+</section>
+
+<section id="analysis">
+  <div class="sec-head"><span class="eyebrow">1 · Analysis</span><h2>What the clip says</h2></div>
+  <p><b>Topic:</b> a coach on a podcast arguing that jiu-jitsu isn't about flashy, fast submissions done for applause like at a competition. You always have to connect the sport side to real-world application.</p>
+  <p><b>Structure:</b> setup with a sarcastic quote (0–9 s) → thesis (“mora uvek”, 10–12 s) → the two-part parallel (12.6–16.5 s) → an open ending that stops mid-sentence (“i dan danas…”).</p>
+  <p><b>Pace:</b> fast, conversational, almost no dead air. I'll trim only the five breaths of about 0.3 s, and each cut is hidden under a planned effect or camera change. The thesis is deliberately left clean and slow.</p>
+  <p><b>Shots in the source:</b> wide A 0–2.0 s · wide B 2.0–6.77 s · close-up 6.77–12.6 s · wide B 12.6–16.5 s · wide C 16.5–19.07 s.</p>
+  <h4>Transcript (read from the word-synced captions; speech-to-text models were blocked by this session's network)</h4>
+  <div class="tbl"><table><thead><tr><th>Source</th><th>Serbian</th><th>English</th></tr></thead><tbody>
+  <tr><td class="mono">00.00s</td><td lang="sr">Jer jiu-jitsu nije neka</td><td class="en">Because jiu-jitsu isn&#x27;t some</td></tr>
+<tr><td class="mono">02.20s</td><td lang="sr">„skočimiš“ varijanta —</td><td class="en">“jump-on-me” kind of thing —</td></tr>
+<tr><td class="mono">03.20s</td><td lang="sr">aha, sad ću ja da skočim i da napravim</td><td class="en">“aha, now I&#x27;ll jump in and pull off</td></tr>
+<tr><td class="mono">04.80s</td><td lang="sr">neki submission onako na brzaka,</td><td class="en">some submission real quick,</td></tr>
+<tr><td class="mono">06.80s</td><td lang="sr">svi će oni da mi aplaudiraju, znaš,</td><td class="en">and they&#x27;ll all applaud me,” you know,</td></tr>
+<tr><td class="mono">08.40s</td><td lang="sr">kao na takmičenju.</td><td class="en">like at a competition.</td></tr>
+<tr><td class="mono">10.00s</td><td lang="sr">Jer mora uvek da se napravi ta paralela između</td><td class="en">Because you always have to draw that parallel between</td></tr>
+<tr><td class="mono">12.80s</td><td lang="sr">sportskog dela, realnog dela,</td><td class="en">the sport side and the real side,</td></tr>
+<tr><td class="mono">14.40s</td><td lang="sr">to jest primene toga svega što radiš.</td><td class="en">meaning the application of everything you do.</td></tr>
+<tr><td class="mono">16.00s</td><td lang="sr">Tako da, ako ga treniraš i dan danas…</td><td class="en">So if you train it, even to this day…</td></tr>
+  </tbody></table></div>
+</section>
+
+<section id="timeline">
+  <div class="sec-head"><span class="eyebrow">2 · Structure</span><h2>Sequence at a glance</h2></div>
+  <div class="timeline"><svg viewBox="0 0 980 196" role="img" aria-label="Timeline overview">
+<text x="0" y="35" class="tl-lab">V5 Captions</text>
+<rect x="92" y="18" width="878" height="26" rx="3" class="tl-lane"/>
+<text x="0" y="67" class="tl-lab">V3–V4 Graphics</text>
+<rect x="92" y="50" width="878" height="26" rx="3" class="tl-lane"/>
+<text x="0" y="99" class="tl-lab">V1 Picture</text>
+<rect x="92" y="82" width="878" height="26" rx="3" class="tl-lane"/>
+<text x="0" y="131" class="tl-lab">A2–A3 SFX</text>
+<rect x="92" y="114" width="878" height="26" rx="3" class="tl-lane"/>
+<text x="0" y="163" class="tl-lab">A4 Music</text>
+<rect x="92" y="146" width="878" height="26" rx="3" class="tl-lane"/>
+<rect x="92.0" y="82" width="71.4" height="26" rx="3" class="tl-clip"/>
+<text x="96.0" y="99" class="tl-txt">0.00–1.62</text>
+<rect x="164.9" y="82" width="131.3" height="26" rx="3" class="tl-clip"/>
+<text x="168.9" y="99" class="tl-txt">2.00–4.95</text>
+<rect x="297.8" y="82" width="156.1" height="26" rx="3" class="tl-clip"/>
+<text x="301.8" y="99" class="tl-txt">5.25–8.75</text>
+<rect x="455.4" y="82" width="143.9" height="26" rx="3" class="tl-clip"/>
+<text x="459.4" y="99" class="tl-txt">9.02–12.25</text>
+<rect x="600.8" y="82" width="176.4" height="26" rx="3" class="tl-clip"/>
+<text x="604.8" y="99" class="tl-txt">12.60–16.55</text>
+<rect x="778.6" y="82" width="99.8" height="26" rx="3" class="tl-clip"/>
+<text x="782.6" y="99" class="tl-txt">16.82–19.07</text>
+<rect x="879.9" y="82" width="89.1" height="26" rx="3" class="tl-end"/>
+<text x="883.9" y="99" class="tl-txt-on">freeze</text>
+<rect x="93.0" y="50" width="69.9" height="26" rx="3" class="tl-fx"/>
+<text x="97.0" y="67" class="tl-txt-on">S1</text>
+<rect x="165.9" y="50" width="51.0" height="26" rx="3" class="tl-fx"/>
+<text x="169.9" y="67" class="tl-txt-on">S2</text>
+<rect x="220.0" y="50" width="75.8" height="26" rx="3" class="tl-fx"/>
+<text x="224.0" y="67" class="tl-txt-on">S3</text>
+<rect x="298.8" y="50" width="65.4" height="26" rx="3" class="tl-fx"/>
+<text x="302.8" y="67" class="tl-txt-on">S4</text>
+<rect x="367.2" y="50" width="86.2" height="26" rx="3" class="tl-fx"/>
+<text x="371.2" y="67" class="tl-txt-on">S5</text>
+<rect x="456.4" y="50" width="41.1" height="26" rx="3" class="tl-fx"/>
+<text x="460.4" y="67" class="tl-txt-on">S6</text>
+<rect x="500.5" y="50" width="98.3" height="26" rx="3" class="tl-fx"/>
+<text x="504.5" y="67" class="tl-txt-on">S7</text>
+<rect x="601.8" y="50" width="174.9" height="26" rx="3" class="tl-fx"/>
+<text x="605.8" y="67" class="tl-txt-on">S8</text>
+<rect x="779.6" y="50" width="188.4" height="26" rx="3" class="tl-fx"/>
+<text x="783.6" y="67" class="tl-txt-on">S9</text>
+<rect x="92.0" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="173.9" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="219.0" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="291.0" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="367.6" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="439.6" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="499.5" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="609.8" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="681.8" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="753.9" y="18" width="54.0" height="26" rx="3" class="tl-cap"/>
+<rect x="90.5" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="163.4" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="228.7" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="262.5" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="327.8" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="364.7" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="370.6" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="393.1" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="453.9" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="466.5" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="599.3" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="608.3" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="662.3" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="689.3" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="878.4" y="118" width="3" height="18" rx="1.5" class="tl-hit"/>
+<rect x="92" y="146" width="878.0" height="26" rx="3" class="tl-music"/>
+<text x="96.0" y="163" class="tl-txt">▲ downbeat</text>
+<text x="604.8" y="163" class="tl-txt">▲ drop</text>
+<text x="883.9" y="163" class="tl-txt">▲ final hit</text>
+<line x1="164.9" y1="12" x2="164.9" y2="176" class="tl-cut"/>
+<line x1="297.8" y1="12" x2="297.8" y2="176" class="tl-cut"/>
+<line x1="455.4" y1="12" x2="455.4" y2="176" class="tl-cut"/>
+<line x1="600.8" y1="12" x2="600.8" y2="176" class="tl-cut"/>
+<line x1="778.6" y1="12" x2="778.6" y2="176" class="tl-cut"/>
+<line x1="92.0" y1="178" x2="92.0" y2="188" class="tl-tick"/>
+<text x="92.0" y="196" class="tl-ruler" text-anchor="middle">0s</text>
+<line x1="137.0" y1="178" x2="137.0" y2="184" class="tl-tick"/>
+<line x1="182.1" y1="178" x2="182.1" y2="184" class="tl-tick"/>
+<text x="182.1" y="196" class="tl-ruler" text-anchor="middle">2s</text>
+<line x1="227.1" y1="178" x2="227.1" y2="184" class="tl-tick"/>
+<line x1="272.1" y1="178" x2="272.1" y2="184" class="tl-tick"/>
+<text x="272.1" y="196" class="tl-ruler" text-anchor="middle">4s</text>
+<line x1="317.1" y1="178" x2="317.1" y2="188" class="tl-tick"/>
+<line x1="362.2" y1="178" x2="362.2" y2="184" class="tl-tick"/>
+<text x="362.2" y="196" class="tl-ruler" text-anchor="middle">6s</text>
+<line x1="407.2" y1="178" x2="407.2" y2="184" class="tl-tick"/>
+<line x1="452.2" y1="178" x2="452.2" y2="184" class="tl-tick"/>
+<text x="452.2" y="196" class="tl-ruler" text-anchor="middle">8s</text>
+<line x1="497.2" y1="178" x2="497.2" y2="184" class="tl-tick"/>
+<line x1="542.3" y1="178" x2="542.3" y2="188" class="tl-tick"/>
+<text x="542.3" y="196" class="tl-ruler" text-anchor="middle">10s</text>
+<line x1="587.3" y1="178" x2="587.3" y2="184" class="tl-tick"/>
+<line x1="632.3" y1="178" x2="632.3" y2="184" class="tl-tick"/>
+<text x="632.3" y="196" class="tl-ruler" text-anchor="middle">12s</text>
+<line x1="677.3" y1="178" x2="677.3" y2="184" class="tl-tick"/>
+<line x1="722.4" y1="178" x2="722.4" y2="184" class="tl-tick"/>
+<text x="722.4" y="196" class="tl-ruler" text-anchor="middle">14s</text>
+<line x1="767.4" y1="178" x2="767.4" y2="188" class="tl-tick"/>
+<line x1="812.4" y1="178" x2="812.4" y2="184" class="tl-tick"/>
+<text x="812.4" y="196" class="tl-ruler" text-anchor="middle">16s</text>
+<line x1="857.4" y1="178" x2="857.4" y2="184" class="tl-tick"/>
+<line x1="902.5" y1="178" x2="902.5" y2="184" class="tl-tick"/>
+<text x="902.5" y="196" class="tl-ruler" text-anchor="middle">18s</text>
+<line x1="947.5" y1="178" x2="947.5" y2="184" class="tl-tick"/>
+</svg></div>
+  <div class="legend">
+    <span><i style="background:var(--clip)"></i>Kept dialogue (source in–out)</span>
+    <span><i style="background:var(--fx)"></i>Scene graphics</span>
+    <span><i style="background:var(--cap)"></i>Caption chunks</span>
+    <span><i style="background:var(--fg)"></i>SFX hit</span>
+    <span><i style="background:var(--music)"></i>Music bed</span>
+    <span><i style="background:var(--accent)"></i>Dashed: pause removed</span>
+  </div>
+</section>
+
+<section id="scenes">
+  <div class="sec-head"><span class="eyebrow">3 · Storyboard</span><h2>Scene by scene</h2>
+  <p>Output timecodes are SMPTE at 30 fps on the edited sequence. Source times are seconds into your .mov. <b class="tag tag-real">Source frame</b> is a real frame from your footage. <b class="tag tag-mock">Concept mockup</b> is a still I composed from that frame to show intent. It is not a render of the final effect.</p></div>
+  <div class="scenes">
+  
+<article class="scene" id="s1">
+  <header class="scene-head">
+    <div class="scene-id">S1</div>
+    <div class="scene-title"><h3>Hook</h3><div class="fxrow"><span class="chip">Orbit</span></div></div>
+    <dl class="tcs">
+      <div><dt>Output</dt><dd class="mono">00:00:00:00 → 00:00:01:19</dd></div>
+      <div><dt>Source</dt><dd class="mono">00.00s → 01.62s · Wide A</dd></div>
+    </dl>
+  </header>
+  <div class="scene-body">
+    <div class="frames">
+      <figure><img class="src" src="sb/orig_1.0.jpg" alt="Original frame from the source recording at 1.0 seconds" loading="lazy" width="438" height="948"><figcaption><b class="tag tag-real">Source frame</b> 1.0 s, unedited</figcaption></figure>
+      <figure><img src="sb/mock_s1_orbit.jpg" alt="Concept mockup of Orbit" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> still, not a render</figcaption></figure>
+      
+    </div>
+    <div class="notes">
+      <blockquote><p lang="sr">„Jer jiu-jitsu nije neka…“</p><p class="en">“Because jiu-jitsu isn&#x27;t some…”</p></blockquote>
+      <h4>Why this effect</h4><p>The first frame has to stop the scroll. The topic word orbits the speaker&#x27;s head, so the viewer knows what this is about before he finishes the first word.</p>
+      <h4>Animation &amp; timing</h4>
+      <div class="tbl"><table class="anim"><tr><td class="mono">00:00:00:00</td><td>Ring of “JIU-JITSU •” scales 0→100% (8 fr, ease-out back). 12° tilt, one revolution per 2.4 s.</td></tr><tr><td class="mono">00:00:00:00 → end</td><td>Back half of the ring passes behind the head (roto mask on a duplicate V2 layer). Slow push on V1, 100→106%.</td></tr><tr><td class="mono">Captions</td><td>“JER” then “JIU-JITSU” pops in a red pill.</td></tr></table></div>
+      <h4>Sound</h4><p>Sub hit + airy swirl whoosh on frame 0. Music bed starts with a downbeat.</p>
+      <h4>Into the next scene</h4><p>Paper-tear wipe (6 fr) on the camera change. The 0.38 s breath between “neka” and “skočimiš” is cut here, so the jump cut lands on a real angle change and disappears.</p>
+    </div>
+  </div>
+</article>
+<article class="scene" id="s2">
+  <header class="scene-head">
+    <div class="scene-id">S2</div>
+    <div class="scene-title"><h3>The mocking quote</h3><div class="fxrow"><span class="chip">Paper Cutout</span></div></div>
+    <dl class="tcs">
+      <div><dt>Output</dt><dd class="mono">00:00:01:19 → 00:00:02:25</dd></div>
+      <div><dt>Source</dt><dd class="mono">02.00s → 03.20s · Wide B</dd></div>
+    </dl>
+  </header>
+  <div class="scene-body">
+    <div class="frames">
+      <figure><img class="src" src="sb/orig_2.6.jpg" alt="Original frame from the source recording at 2.6 seconds" loading="lazy" width="438" height="948"><figcaption><b class="tag tag-real">Source frame</b> 2.6 s, unedited</figcaption></figure>
+      <figure><img src="sb/mock_s2_paper.jpg" alt="Concept mockup of Paper Cutout" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> still, not a render</figcaption></figure>
+      
+    </div>
+    <div class="notes">
+      <blockquote><p lang="sr">„…„skočimiš“ varijanta.“</p><p class="en">“…some ‘jump-on-me’ kind of thing.”</p></blockquote>
+      <h4>Why this effect</h4><p>He&#x27;s quoting a cliché sarcastically. A hand-made collage look marks the phrase as a quote and changes the texture early, which keeps the edit fresh.</p>
+      <h4>Animation &amp; timing</h4>
+      <div class="tbl"><table class="anim"><tr><td class="mono">00:00:01:19</td><td>Background swaps to a paper texture with a torn red strip. The speaker becomes a sticker (roto, 8 px white border, drop shadow). Posterize Time 12 fps gives a stop-motion feel.</td></tr><tr><td class="mono">00:00:01:25</td><td>„SKOČIMIŠ“ black label slams in: scale 130→100%, +4° rotation, 4 fr.</td></tr><tr><td class="mono">00:00:02:07</td><td>VARIJANTA yellow label and a “?!” sticker slam in, offset by 3 fr.</td></tr></table></div>
+      <h4>Sound</h4><p>Paper rustle under the swap, two rubber-stamp thuds on the labels.</p>
+      <h4>Into the next scene</h4><p>The sticker peels off the top-left corner and reveals live video underneath (8 fr), straight into S3.</p>
+    </div>
+  </div>
+</article>
+<article class="scene" id="s3">
+  <header class="scene-head">
+    <div class="scene-id">S3</div>
+    <div class="scene-title"><h3>The imagined move</h3><div class="fxrow"><span class="chip">Zoom Portal</span><span class="chip">B-roll Overlay</span></div></div>
+    <dl class="tcs">
+      <div><dt>Output</dt><dd class="mono">00:00:02:25 → 00:00:04:17</dd></div>
+      <div><dt>Source</dt><dd class="mono">03.20s → 04.95s · Wide B</dd></div>
+    </dl>
+  </header>
+  <div class="scene-body">
+    <div class="frames">
+      <figure><img class="src" src="sb/orig_4.2.jpg" alt="Original frame from the source recording at 4.2 seconds" loading="lazy" width="438" height="948"><figcaption><b class="tag tag-real">Source frame</b> 4.2 s, unedited</figcaption></figure>
+      <figure><img src="sb/mock_s3_portal.jpg" alt="Concept mockup of B-roll Overlay" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> still, not a render</figcaption></figure>
+      
+    </div>
+    <div class="notes">
+      <blockquote><p lang="sr">„Aha, sad ću ja da skočim i da napravim neki…“</p><p class="en">“Aha, now I&#x27;ll jump in and pull off some…”</p></blockquote>
+      <h4>Why this effect</h4><p>He describes a fantasy move. Showing that move is the most direct visual. The portal sits in the dark shelf area, so it never covers his face.</p>
+      <h4>Animation &amp; timing</h4>
+      <div class="tbl"><table class="anim"><tr><td class="mono">00:00:03:02</td><td>On “sad ću”, a red-rimmed circular portal opens in the dark shelf area (scale 0→100%, 10 fr), with a B-roll flying armbar playing inside.</td></tr><tr><td class="mono">00:00:03:25</td><td>On “napravim”, the camera pushes through the portal (V1 + portal 100→420%, ease-in, 9 fr). The B-roll fills the frame.</td></tr><tr><td class="mono">00:00:04:17 (jump cut)</td><td>The 0.30 s hesitation (“neki … submission”) is removed while the B-roll is full-frame, so nobody sees the cut.</td></tr></table></div>
+      <h4>Sound</h4><p>Low portal hum, then a reverse-suck whoosh into the push.</p>
+      <h4>Into the next scene</h4><p>B-roll runs full-frame through “submission” and snaps back to the speaker on “na brzaka” (S4).</p>
+    </div>
+  </div>
+</article>
+<article class="scene" id="s4">
+  <header class="scene-head">
+    <div class="scene-id">S4</div>
+    <div class="scene-title"><h3>“Real quick”</h3><div class="fxrow"><span class="chip">Snap Zoom</span></div></div>
+    <dl class="tcs">
+      <div><dt>Output</dt><dd class="mono">00:00:04:17 → 00:00:06:03</dd></div>
+      <div><dt>Source</dt><dd class="mono">05.25s → 06.77s · Wide B</dd></div>
+    </dl>
+  </header>
+  <div class="scene-body">
+    <div class="frames">
+      <figure><img class="src" src="sb/orig_6.3.jpg" alt="Original frame from the source recording at 6.3 seconds" loading="lazy" width="438" height="948"><figcaption><b class="tag tag-real">Source frame</b> 6.3 s, unedited</figcaption></figure>
+      <figure><img src="sb/mock_s4_snap.jpg" alt="Concept mockup of Snap Zoom" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> still, not a render</figcaption></figure>
+      
+    </div>
+    <div class="notes">
+      <blockquote><p lang="sr">„…submission onako na brzaka,“</p><p class="en">“…some submission, real quick,”</p></blockquote>
+      <h4>Why this effect</h4><p>“Na brzaka” means fast. A 3-frame punch-in is the visual version of that word and the punchline of his sarcasm.</p>
+      <h4>Animation &amp; timing</h4>
+      <div class="tbl"><table class="anim"><tr><td class="mono">00:00:04:17</td><td>B-roll is full-frame under “submission”.</td></tr><tr><td class="mono">00:00:05:08</td><td>Hard cut back to the speaker at 100%, then a 3-frame snap to 138% (center on face) with a radial blur on frames 1–2, and hold.</td></tr><tr><td class="mono">Caption</td><td>“NA BRZAKA” at 64 px, the largest caption in the video.</td></tr></table></div>
+      <h4>Sound</h4><p>Camera-shutter snap + short tight whoosh, timed to the first frame of the punch.</p>
+      <h4>Into the next scene</h4><p>Zoom-through cut at 00:00:06:03: the wide shot keeps zooming 138→220% with motion blur over 4 fr. The close-up enters at 160% and settles to 100% over 6 fr.</p>
+    </div>
+  </div>
+</article>
+<article class="scene" id="s5">
+  <header class="scene-head">
+    <div class="scene-id">S5</div>
+    <div class="scene-title"><h3>Imaginary applause</h3><div class="fxrow"><span class="chip">Zoom Through Cut (in)</span><span class="chip">Chat Takeover</span></div></div>
+    <dl class="tcs">
+      <div><dt>Output</dt><dd class="mono">00:00:06:03 → 00:00:08:02</dd></div>
+      <div><dt>Source</dt><dd class="mono">06.77s → 08.75s · Close-up</dd></div>
+    </dl>
+  </header>
+  <div class="scene-body">
+    <div class="frames">
+      <figure><img class="src" src="sb/orig_7.6.jpg" alt="Original frame from the source recording at 7.6 seconds" loading="lazy" width="438" height="948"><figcaption><b class="tag tag-real">Source frame</b> 7.6 s, unedited</figcaption></figure>
+      <figure><img src="sb/mock_s5_chat.jpg" alt="Concept mockup of Chat Takeover" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> still, not a render</figcaption></figure>
+      
+    </div>
+    <div class="notes">
+      <blockquote><p lang="sr">„…svi će oni da mi aplaudiraju, znaš,“</p><p class="en">“…and they&#x27;ll all applaud me, you know,”</p></blockquote>
+      <h4>Why this effect</h4><p>The applause is imagined and ironic. A flood of over-the-top comments plays the irony the way the target audience sees it every day.</p>
+      <h4>Animation &amp; timing</h4>
+      <div class="tbl"><table class="anim"><tr><td class="mono">00:00:06:05</td><td>Background dims 30% with a 6 px blur. Comment bubbles rise from the lower left, one every 5 fr, each scaling 80→100%.</td></tr><tr><td class="mono">00:00:06:22</td><td>On “aplaudiraju”, 👏/🔥/❤ particles burst from the right edge, peak density.</td></tr><tr><td class="mono">00:00:07:22</td><td>On “znaš”, every bubble swipes off left in 6 fr and the blur clears.</td></tr></table></div>
+      <h4>Sound</h4><p>Rising-pitch notification pings, one per bubble. A light crowd-applause bed at −24 dB fades out on “znaš”.</p>
+      <h4>Into the next scene</h4><p>The Liquid Glass panel slides up as the bubbles leave (4 fr overlap), hiding the 0.27 s pause cut after “znaš”.</p>
+    </div>
+  </div>
+</article>
+<article class="scene" id="s6">
+  <header class="scene-head">
+    <div class="scene-id">S6</div>
+    <div class="scene-title"><h3>Competition</h3><div class="fxrow"><span class="chip">Liquid Glass</span></div></div>
+    <dl class="tcs">
+      <div><dt>Output</dt><dd class="mono">00:00:08:02 → 00:00:09:02</dd></div>
+      <div><dt>Source</dt><dd class="mono">09.02s → 10.00s · Close-up</dd></div>
+    </dl>
+  </header>
+  <div class="scene-body">
+    <div class="frames">
+      <figure><img class="src" src="sb/orig_9.4.jpg" alt="Original frame from the source recording at 9.4 seconds" loading="lazy" width="438" height="948"><figcaption><b class="tag tag-real">Source frame</b> 9.4 s, unedited</figcaption></figure>
+      <figure><img src="sb/mock_s6_glass.jpg" alt="Concept mockup of Liquid Glass" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> still, not a render</figcaption></figure>
+      
+    </div>
+    <div class="notes">
+      <blockquote><p lang="sr">„…kao na takmičenju.“</p><p class="en">“…like at a competition.”</p></blockquote>
+      <h4>Why this effect</h4><p>It names the context: the scoreboard world of sport jiu-jitsu. Frosted glass keeps his face visible behind the panel and looks premium without heavy colour.</p>
+      <h4>Animation &amp; timing</h4>
+      <div class="tbl"><table class="anim"><tr><td class="mono">00:00:08:02</td><td>Frosted panel (40 px background blur, 14% white, 1 px highlight stroke) rises 60 px with ease-out over 10 fr. A specular light sweep crosses it once.</td></tr><tr><td class="mono">00:00:08:11</td><td>Score ticks 0→2 and the match timer runs. ADV / PEN / SUB rows fade in, with SUB shown as “?” in red.</td></tr></table></div>
+      <h4>Sound</h4><p>Glass tick on entry, scoreboard beep on the score tick, short referee whistle at −18 dB.</p>
+      <h4>Into the next scene</h4><p>The panel scales to 90% and dissolves (6 fr) as “JER MORA UVEK” comes up. Every graphic clears for the thesis.</p>
+    </div>
+  </div>
+</article>
+<article class="scene" id="s7">
+  <header class="scene-head">
+    <div class="scene-id">S7</div>
+    <div class="scene-title"><h3>The thesis</h3><div class="fxrow"><span class="chip">Dolly Zoom</span></div></div>
+    <dl class="tcs">
+      <div><dt>Output</dt><dd class="mono">00:00:09:02 → 00:00:11:09</dd></div>
+      <div><dt>Source</dt><dd class="mono">10.00s → 12.25s · Close-up</dd></div>
+    </dl>
+  </header>
+  <div class="scene-body">
+    <div class="frames">
+      <figure><img class="src" src="sb/orig_10.6.jpg" alt="Original frame from the source recording at 10.6 seconds" loading="lazy" width="438" height="948"><figcaption><b class="tag tag-real">Source frame</b> 10.6 s, unedited</figcaption></figure>
+      <figure><img src="sb/mock_s7_dolly.jpg" alt="Concept mockup of Dolly Zoom" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> still, not a render</figcaption></figure>
+      
+    </div>
+    <div class="notes">
+      <blockquote><p lang="sr">„Jer mora uvek da se napravi ta paralela između…“</p><p class="en">“Because you always have to draw that parallel between…”</p></blockquote>
+      <h4>Why this effect</h4><p>This is the most important sentence. A slow vertigo pull with no other graphics gives it weight. It is the calmest shot in the edit, on purpose.</p>
+      <h4>Animation &amp; timing</h4>
+      <div class="tbl"><table class="anim"><tr><td class="mono">00:00:09:02 → 00:00:11:09</td><td>Subject layer (roto) holds at 100%. The background plate scales 100→135% with ease-in-out. A soft red rim glow builds around the subject.</td></tr><tr><td class="mono">Caption</td><td>“MORA UVEK” in a double red pill at 56 px.</td></tr></table></div>
+      <h4>Sound</h4><p>Low sub drone with a reverse-cymbal riser that peaks into the frame break.</p>
+      <h4>Into the next scene</h4><p>Frame Break at 00:00:11:09: the close-up freezes for 2 fr, cracks from an impact point near the mouth, and the shards fly outward (10 fr) to reveal the wide shot. This also hides the 0.35 s pause cut.</p>
+    </div>
+  </div>
+</article>
+<article class="scene" id="s8">
+  <header class="scene-head">
+    <div class="scene-id">S8</div>
+    <div class="scene-title"><h3>Sport vs. reality</h3><div class="fxrow"><span class="chip">Frame Break (in)</span><span class="chip">Checklist Pop</span><span class="chip">Digital Zoom</span></div></div>
+    <dl class="tcs">
+      <div><dt>Output</dt><dd class="mono">00:00:11:09 → 00:00:15:08</dd></div>
+      <div><dt>Source</dt><dd class="mono">12.60s → 16.55s · Wide B</dd></div>
+    </dl>
+  </header>
+  <div class="scene-body">
+    <div class="frames">
+      <figure><img class="src" src="sb/orig_14.8.jpg" alt="Original frame from the source recording at 14.8 seconds" loading="lazy" width="438" height="948"><figcaption><b class="tag tag-real">Source frame</b> 14.8 s, unedited</figcaption></figure>
+      <figure><img src="sb/mock_s8_checklist.jpg" alt="Concept mockup of Digital Zoom" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> still, not a render</figcaption></figure>
+      <figure><img src="sb/mock_t2_framebreak.jpg" alt="Concept mockup of the frame break transition" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> Frame Break transition</figcaption></figure>
+    </div>
+    <div class="notes">
+      <blockquote><p lang="sr">„…sportskog dela, realnog dela, to jest primene toga svega što radiš.“</p><p class="en">“…the sport side and the real side, meaning the application of everything you do.”</p></blockquote>
+      <h4>Why this effect</h4><p>He lists the two halves of the parallel, then the conclusion. A checklist that builds item by item turns his structure into something the viewer can see.</p>
+      <h4>Animation &amp; timing</h4>
+      <div class="tbl"><table class="anim"><tr><td class="mono">00:00:11:09</td><td>Shards clear. “TA PARALELA:” label fades in. Slow digital push 100→112% across the whole scene (keyframed Scale, ease).</td></tr><tr><td class="mono">00:00:11:15</td><td>Card 1 “✓ SPORTSKI DEO” pops 0→108→100% (8 fr). The check stroke draws on in 6 fr.</td></tr><tr><td class="mono">00:00:12:21</td><td>Card 2 “✓ REALNI DEO” pops.</td></tr><tr><td class="mono">00:00:13:09</td><td>Card 3 “= PRIMENA” pops in solid red. Cards 1–2 dim to 60%.</td></tr></table></div>
+      <h4>Sound</h4><p>Glass shatter + bass hit on the break. Two soft pop + check ticks, and a bright ding on PRIMENA.</p>
+      <h4>Into the next scene</h4><p>Cards fly off upward, staggered (2 fr each), as he says “tako da”. The cut over the 0.27 s pause lands under the card exit.</p>
+    </div>
+  </div>
+</article>
+<article class="scene" id="s9">
+  <header class="scene-head">
+    <div class="scene-id">S9</div>
+    <div class="scene-title"><h3>Payoff → end card</h3><div class="fxrow"><span class="chip">Magazine Cover</span></div></div>
+    <dl class="tcs">
+      <div><dt>Output</dt><dd class="mono">00:00:15:08 → 00:00:19:15</dd></div>
+      <div><dt>Source</dt><dd class="mono">16.82s → 19.07s · Wide C</dd></div>
+    </dl>
+  </header>
+  <div class="scene-body">
+    <div class="frames">
+      <figure><img class="src" src="sb/orig_18.4.jpg" alt="Original frame from the source recording at 18.4 seconds" loading="lazy" width="438" height="948"><figcaption><b class="tag tag-real">Source frame</b> 18.4 s, unedited</figcaption></figure>
+      <figure><img src="sb/mock_end_magazine.jpg" alt="Concept mockup of Magazine Cover" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-mock">Concept mockup</b> still, not a render</figcaption></figure>
+      
+    </div>
+    <div class="notes">
+      <blockquote><p lang="sr">„Tako da, ako ga treniraš i dan danas…“</p><p class="en">“So if you train it, even to this day…”</p></blockquote>
+      <h4>Why this effect</h4><p>The clip ends mid-sentence. Instead of cutting off abruptly, it freezes into a cover that reframes the cutoff as a cliffhanger (“NASTAVAK →”) and a strong loop point.</p>
+      <h4>Animation &amp; timing</h4>
+      <div class="tbl"><table class="anim"><tr><td class="mono">00:00:15:08</td><td>Push back out 112→100% while a light sweep crosses the red neon. Music swells.</td></tr><tr><td class="mono">00:00:17:15 → 00:00:19:15</td><td>On “danas”: white flash (2 fr) and a freeze on the close-up portrait. “JIU-JITSU” masthead slams down behind the head (roto overlap). Cover lines type on and the “NASTAVAK →” pill pops last.</td></tr></table></div>
+      <h4>Sound</h4><p>Camera-flash pop + impact hit on the freeze. The music lands its final hit and rings out.</p>
+      <h4>Into the next scene</h4><p>End of video. The final cover frame works as a loop back into the S1 hook.</p>
+    </div>
+  </div>
+</article>
+  </div>
+</section>
+
+<section id="specs">
+  <div class="sec-head"><span class="eyebrow">4 · Look &amp; sound</span><h2>Global specs</h2></div>
+  <div class="specs">
+    <div class="spec"><h3>Captions &amp; type</h3>
+      <div class="capdemo"><span>JER</span><span class="k">MORA UVEK</span></div>
+      <ul><li>Inter Display Black, uppercase, 64 px at 1080 width. 1–3 words per chunk, timed to the speaker's original caption sync.</li>
+      <li>White with a soft shadow. One keyword per chunk sits on a crimson pill rotated −2°. Each word pops 100→110→100% over 4 fr.</li>
+      <li>Placed at about 68% of frame height, clear of the Reels/TikTok UI (bottom 20%, right 12%). Č Ć Š Ž Đ are fully supported.</li>
+      <li>Graphics use Inter Display for headlines, Inter SemiBold for labels, and JetBrains Mono only for the match timer.</li></ul>
+      <div class="swatches"><span class="sw"><i style="background:#E8241C"></i>Crimson</span><span class="sw"><i style="background:#FFFFFF"></i>White</span><span class="sw"><i style="background:#111111"></i>Ink</span><span class="sw"><i style="background:#FFD200"></i>Sticker</span><span class="sw"><i style="background:#ECE4D6"></i>Paper</span></div>
+    </div>
+    <div class="spec"><h3>Colour grade</h3>
+      <div class="grade">
+        <figure><img src="sb/grade_before_10.6.jpg" alt="Close-up before grading" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-real">Before</b> crop + upscale</figcaption></figure>
+        <figure><img src="sb/grade_after_10.6.jpg" alt="Close-up after grading" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-render">Rendered preview</b> graded still</figcaption></figure>
+        <figure><img src="sb/grade_before_14.8.jpg" alt="Wide shot before grading" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-real">Before</b></figcaption></figure>
+        <figure><img src="sb/grade_after_14.8.jpg" alt="Wide shot after grading" loading="lazy" width="540" height="960"><figcaption><b class="tag tag-render">Rendered preview</b></figcaption></figure>
+      </div>
+      <ul><li>Crush the lifted blacks to true black, apply a gentle S-curve, and roll off the highlights.</li>
+      <li>Slight teal in the deep shadows for separation and a touch of warmth in the highlights. Skin protected with an HSL qualifier.</li>
+      <li>Keep the studio's crimson neon as the hero colour, which ties it to the graphics palette.</li>
+      <li>Vignette −0.6 and 4–5% animated grain to hide upscale and compression artefacts. Match the wide and close-up exposure.</li></ul>
+      <p class="en">These previews were rendered here with the exact crop and grade filters I'd use. In Premiere, I'll rebuild them as a Lumetri adjustment layer plus a .cube LUT.</p>
+    </div>
+    <div class="spec"><h3>Sound design &amp; mix</h3>
+      <dl class="kv">
+        <dt>Dialogue</dt><dd>HPF 80 Hz · denoise 20% · +2 dB @ 3 kHz · de-ess · 3:1 comp · −14 LUFS</dd>
+        <dt>Music</dt><dd>Dark minimal trap 95–100 BPM · −26 LUFS under speech, auto-ducked · swells to −16 on the end card</dd>
+        <dt>Hits</dt><dd>Downbeat 0:00 · drop on the Frame Break · final hit on the freeze</dd>
+        <dt>SFX</dt><dd>Peaks −18 to −10 dBFS · applause bed −24 dB</dd>
+        <dt>Master</dt><dd>−1 dBTP true-peak limit</dd>
+      </dl>
+      <p class="en">The source audio is 48 kbps AAC from a screen recording. Cleanup helps, but the original file would sound clearly better.</p>
+    </div>
+    <div class="spec"><h3>Sequence &amp; project</h3>
+      <dl class="kv">
+        <dt>Sequence</dt><dd>1080 × 1920 · 30 fps · Rec.709 · square px</dd>
+        <dt>Video tracks</dt><dd>V1 dialogue · V2 roto subject · V3 graphics · V4 B-roll · V5 captions · V6 grade + grain</dd>
+        <dt>Audio tracks</dt><dd>A1 dialogue · A2–A3 SFX · A4 music</dd>
+        <dt>Bins</dt><dd>01_Source · 02_Graphics · 03_SFX · 04_Music · 05_B-roll · 06_Captions · 07_Exports</dd>
+        <dt>Export</dt><dd>H.264 VBR 2-pass 16 Mbps + AAC 320k · ProRes 422 HQ master</dd>
+        <dt>Safety</dt><dd>Original .mov never modified · versioned saves (v01, v02 …)</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section id="effects">
+  <div class="sec-head"><span class="eyebrow">5 · Effects audit</span><h2>13 of 20 used, and why</h2>
+  <p>About one visual beat every 1.5 s suits fast short-form, but only because each effect is tied to a specific word. The seven left out would be forced, would repeat another effect, or would need footage that doesn't exist.</p></div>
+  <div class="tbl"><table><thead><tr><th>#</th><th>Effect</th><th>Status</th><th>Where</th><th>Reason</th></tr></thead><tbody>
+  <tr><td class="mono num">1</td><td><b>Orbit</b></td><td><span class="state ok">Used</span></td><td class="mono">S1</td><td>Hook. The topic word circles the speaker.</td></tr>
+<tr><td class="mono num">2</td><td><b>Chat Takeover</b></td><td><span class="state ok">Used</span></td><td class="mono">S5</td><td>Plays the ironic “everyone will applaud me”.</td></tr>
+<tr><td class="mono num">3</td><td><b>Frame Escape</b></td><td><span class="state no">Not used</span></td><td class="mono">—</td><td>It would be the fourth roto effect in 4 seconds. At this resolution, the mask edges breaking the frame look rough.</td></tr>
+<tr><td class="mono num">4</td><td><b>Snap Zoom</b></td><td><span class="state ok">Used</span></td><td class="mono">S4</td><td>Visualises “na brzaka” (real quick).</td></tr>
+<tr><td class="mono num">5</td><td><b>Checklist Pop</b></td><td><span class="state ok">Used</span></td><td class="mono">S8</td><td>Builds sport → reality → application.</td></tr>
+<tr><td class="mono num">6</td><td><b>Headline Storm</b></td><td><span class="state no">Not used</span></td><td class="mono">—</td><td>There are no headlines in a personal opinion clip. Made-up press headlines would be misleading.</td></tr>
+<tr><td class="mono num">7</td><td><b>Zoom Portal</b></td><td><span class="state ok">Used</span></td><td class="mono">S3</td><td>Opens into the imagined flying submission.</td></tr>
+<tr><td class="mono num">8</td><td><b>Growth Curve</b></td><td><span class="state no">Not used</span></td><td class="mono">—</td><td>No data, numbers or progress in the speech, so a curve would be decoration.</td></tr>
+<tr><td class="mono num">9</td><td><b>Studio Reveal</b></td><td><span class="state no">Not used</span></td><td class="mono">—</td><td>Needs footage wider than the shot. Our crop is already tighter than the source. Possible with the original master.</td></tr>
+<tr><td class="mono num">10</td><td><b>B-roll Overlay</b></td><td><span class="state ok">Used</span></td><td class="mono">S3–S4</td><td>Shows the move he describes. Needs a clip from you (see decisions).</td></tr>
+<tr><td class="mono num">11</td><td><b>Paper Cutout</b></td><td><span class="state ok">Used</span></td><td class="mono">S2</td><td>Marks the sarcastic quote “skočimiš varijanta”.</td></tr>
+<tr><td class="mono num">12</td><td><b>Dolly Zoom</b></td><td><span class="state ok">Used</span></td><td class="mono">S7</td><td>Gives weight to the thesis sentence.</td></tr>
+<tr><td class="mono num">13</td><td><b>Magazine Cover</b></td><td><span class="state ok">Used</span></td><td class="mono">End</td><td>Turns the mid-sentence cutoff into a cliffhanger end card.</td></tr>
+<tr><td class="mono num">14</td><td><b>Liquid Glass</b></td><td><span class="state ok">Used</span></td><td class="mono">S6</td><td>Scoreboard for “kao na takmičenju”.</td></tr>
+<tr><td class="mono num">15</td><td><b>Zoom Through Cut</b></td><td><span class="state ok">Used</span></td><td class="mono">S4→S5</td><td>Carries energy across the wide → close-up angle change.</td></tr>
+<tr><td class="mono num">16</td><td><b>Green Screen</b></td><td><span class="state no">Not used</span></td><td class="mono">—</td><td>No keyable footage. Replacing the real studio would hurt authenticity.</td></tr>
+<tr><td class="mono num">17</td><td><b>Frame Break</b></td><td><span class="state ok">Used</span></td><td class="mono">S7→S8</td><td>Breaks out of the thesis into the explanation, and hides a pause cut.</td></tr>
+<tr><td class="mono num">18</td><td><b>Digital Zoom</b></td><td><span class="state ok">Used</span></td><td class="mono">S8</td><td>Slow push that keeps the long wide shot alive.</td></tr>
+<tr><td class="mono num">19</td><td><b>Phone Mockup</b></td><td><span class="state no">Not used</span></td><td class="mono">—</td><td>The source is already a phone screen recording. Framing it in a phone again draws attention to the low resolution.</td></tr>
+<tr><td class="mono num">20</td><td><b>Checklist</b></td><td><span class="state no">Not used</span></td><td class="mono">—</td><td>Same job as Checklist Pop. One checklist per 19 s.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section id="execution">
+  <div class="sec-head"><span class="eyebrow">6 · After approval</span><h2>How I'll execute</h2></div>
+  <ol class="steps">
+    <li>Copy the source into a project folder and leave the original untouched. Build the bins and the 1080 × 1920 / 30 fps sequence.</li>
+    <li>Lay down the six dialogue segments with the five pause cuts and check every cut at frame level.</li>
+    <li>Rotoscope the speaker for S1, S2, S7, and the end card (frame-by-frame segmentation, exported as alpha mattes).</li>
+    <li>Render each motion graphic as a ProRes 4444 clip with alpha, timed to the word timecodes above. Keyframe the zooms and pushes on the clips so they stay editable.</li>
+    <li>Build the captions as an .srt plus styled graphic clips, synthesise and place the SFX, and add the music bed with ducking.</li>
+    <li>Add the grade adjustment layer, LUT, and grain, then mix to −14 LUFS / −1 dBTP.</li>
+    <li>Export, run QC on every transition, caption, level, and colour match, and send you before/after frames and the effects report.</li>
+  </ol>
+  <p>With <b>Option B</b>, steps 1–7 produce a Premiere XML you import with File → Import. Every cut, layer, and zoom keyframe stays editable. Effects built in After Effects in a native workflow (Orbit, Frame Break) arrive as pre-rendered alpha clips rather than live AE comps.</p>
+</section>
+
+<section id="approve">
+  <div class="approve">
+    <h2>To approve, reply with</h2>
+    <ul>
+      <li><b>Plan:</b> approve as is, or list the scenes or effects to change.</li>
+      <li><b>Execution route:</b> A (connect your computer for Premiere) or B (I build the importable timeline and MP4 here).</li>
+      <li><b>Footage:</b> the original high-res file if you have it, otherwise I'll use the screen recording.</li>
+      <li><b>B-roll &amp; music:</b> your clip and track, or permission to use generated or fallback options.</li>
+      <li><b>End card text:</b> confirm “NASTAVAK →” and the handle, or give me your own.</li>
+    </ul>
+  </div>
+</section>
+
+</div>
