@@ -1,12 +1,13 @@
 # Reference implementation
 
-This is a working pipeline from the first project: a 19 s Serbian jiu-jitsu podcast clip recorded off Instagram at 292×632, rendered to 1080×1920. Copy these files and adapt their data tables; don't rewrite them from scratch.
+This is a working pipeline from the first project, tested again on a second one (a 48 s TikTok ad download): a 19 s Serbian jiu-jitsu podcast clip recorded off Instagram at 292×632, rendered to 1080×1920. Copy these files and adapt their data tables; don't rewrite them from scratch.
 
 | File | What it does | What to change per project |
 |---|---|---|
 | `masks.py <workdir>` | rembg person masks at 540×960 for the needed frames → `mask/NNNN.png` | The `need` frame set |
 | `mock.py <dir>` | Concept-mockup stills from graded frames (`grd_<t>.png`) | Frame times, coordinates, text |
-| `build_page.py <out.html>` | Storyboard HTML: timeline SVG, scene cards, specs, effects audit | `SEGS`, `SCENES`, `EFFECTS`, `TRANSCRIPT`, `PAUSES`, copy |
+| `build_page.py <data.py> <out.html>` | Storyboard HTML: timeline SVG, scene cards, specs, effects audit | Nothing. Write a data file instead: copy `data_jiujitsu.py` |
+| `data_jiujitsu.py` | Example storyboard data: segments, scenes, effects audit, transcript, page copy | Everything, per project |
 | `audio.py <workdir>` | Dialogue edit and cleanup, synthesized music and SFX, ducking → `mix_pre.wav` | `SEGS`, SFX `place(...)` times, key/BPM |
 | `render.py <workdir>` | Parallel frame renderer → `frames/NNNN.png` | `SEGS`, `CAPS`, `HIDE`, scene functions, the dispatcher's time ranges |
 

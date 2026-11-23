@@ -8,8 +8,12 @@ if [[ "${1:-}" == "caps" ]]; then
   V="$2"; O="$3"; Y="$4"; HH="$5"; X="${6:-0}"
   WW="${7:-$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$V")}"
   mkdir -p "$O"
-  ffmpeg -v error -y -i "$V" -vf "fps=5,crop=${WW}:${HH}:${X}:${Y},scale=390:-1,drawtext=text='%{pts\:flt}':x=2:y=2:fontsize=13:fontcolor=yellow:box=1:boxcolor=black,tile=4x24" -frames:v 1 "$O/caps.png"
-  echo "wrote $O/caps.png (read it; 96 rows of 0.2 s each — make more sheets with -ss for longer clips)"
+  DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$V")
+  N=$(python3 -c "import math;print(math.ceil(float('$DUR')/15))")
+  for k in $(seq 0 $((N-1))); do
+    ffmpeg -v error -y -ss $((k*15)) -t 15 -i "$V" -vf "fps=5,crop=${WW}:${HH}:${X}:${Y},scale=400:-1,drawtext=text='%{eif\\:t+$((k*15))\\:d}.%{eif\\:mod(t*10\\,10)\\:d}':x=2:y=2:fontsize=14:fontcolor=yellow:box=1:boxcolor=black,tile=5x15" -frames:v 1 "$O/caps_$k.png"
+  done
+  echo "wrote $O/caps_0..$((N-1)).png (15 s per sheet, 0.2 s per cell, timestamps in source seconds)"
   exit 0
 fi
 
@@ -17,7 +21,9 @@ V="$1"; O="$2"; mkdir -p "$O/frames"
 echo "== metadata"
 ffprobe -v error -show_entries format=duration:stream=codec_name,width,height,r_frame_rate,sample_rate,channels -of compact "$V"
 W=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$V")
-ffmpeg -v error -y -i "$V" -vf "fps=1,scale=${W}:-1,tile=10x3" -frames:v 1 "$O/contact.png"
+DUR0=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$V")
+ROWS=$(python3 -c "import math;print(max(1,math.ceil(float('$DUR0')/10)))")
+ffmpeg -v error -y -i "$V" -vf "fps=1,scale=180:-1,drawtext=text='%{pts\\:flt}':x=3:y=3:fontsize=13:fontcolor=yellow:box=1:boxcolor=black,tile=10x${ROWS}" -frames:v 1 "$O/contact.png"
 ffmpeg -v error -y -i "$V" -vf fps=2 "$O/frames/f_%04d.png"
 DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$V")
 MID=$(python3 -c "print(float('$DUR')/2)")

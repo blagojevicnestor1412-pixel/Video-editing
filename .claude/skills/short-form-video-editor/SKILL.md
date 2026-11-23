@@ -35,6 +35,11 @@ Run `scripts/analyze.sh <video> <outdir>`. It produces:
 Look at the contact sheet before planning anything. Things to look for:
 
 - **Screen recordings of social apps** (status bar, IG/TikTok header, like/comment rail, "Reply…" bar, burned-in captions). Measure the clean picture rectangle on a gridded frame (`analyze.sh` writes `grid.png`), crop to it, and tell the user the effective resolution and upscale factor. Ask for the original file, since it is the single biggest quality lever. Crop out the old captions so yours replace them.
+- **Platform downloads (TikTok/Reels saves):**
+  - **Watermark:** it often moves partway through (TikTok jumps from top-left to bottom-right after a few seconds). Find each position on gridded frames at several times, then remove it with time-gated `delogo=x:y:w:h:enable='lt(t,T)'`. Keep the rect 1 px inside the frame edge.
+  - **Outro:** cut any platform end screen.
+  - **Mid-frame captions:** if the old captions sit mid-frame and can't be cropped, `delogo` the band and pin your captions over it on an opaque caption bar wide enough to hide the smear.
+  - **Gotcha:** `-ss` before `-i` resets `t`, so `enable` gates don't fire on single-frame previews. Judge cleanup on the full decode.
 - **Burned-in captions as a transcript:** crop the caption band from every frame at 5 fps, tile it with timestamps (`analyze.sh caps <y> <h>`), and read it. This gives word-level timing that is often better than ASR. Translate it for the plan.
 - **Story:** topic, hook, thesis sentence, the list/contrast structure, and how it ends. Note when the clip ends mid-sentence, because the end card can turn that into a cliffhanger.
 - **Pauses:** only trim real breaths (about 0.3–0.4 s). Place each jump cut where an effect, a camera change or full-frame graphics hides it.
@@ -49,7 +54,7 @@ Read `references/effects-catalog.md`. For each effect it gives the purpose, a go
 - Use each effect at most once.
 - For every effect you leave out, give a concrete reason (no data for a graph, no keyable footage, would repeat another effect, needs footage that doesn't exist).
 
-Build the storyboard as an HTML artifact (see `scripts/reference/build_page.py` for a complete generator). It needs:
+Build the storyboard as an HTML artifact. `scripts/reference/build_page.py <project_data.py> <out.html>` is a complete generator: copy `data_jiujitsu.py`, replace its fields (SEGS, SCENES, EFFECTS, TRANSCRIPT, PAUSES, SFX_HITS and the *_HTML copy blocks), and build. Images go in `sb/` beside the page. Publish from a folder inside the working directory or the scratchpad. The page needs:
 - **Up front:** a "things that need you" block covering blockers, quality ceiling, assets (B-roll, music) and rights.
 - **Analysis:** the transcript with translation and the shot list.
 - **Timeline:** an SVG overview with lanes for picture, graphics, captions, SFX and music, with the pause cuts marked.

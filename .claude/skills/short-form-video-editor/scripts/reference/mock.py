@@ -72,6 +72,7 @@ def paste_shadowed(base, layer, xy, off=(0, 10), blur=16, alpha=140):
     big = Image.new("RGBA", (layer.width + pad * 2, layer.height + pad * 2), (0, 0, 0, 0))
     big.paste(s, (pad, pad), s)
     big = big.filter(ImageFilter.GaussianBlur(blur))
+    xy = (int(xy[0]), int(xy[1]))
     base.alpha_composite(big, (xy[0] - pad + off[0], xy[1] - pad + off[1]))
     base.alpha_composite(layer, xy)
 
