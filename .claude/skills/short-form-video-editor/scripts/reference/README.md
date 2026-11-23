@@ -1,6 +1,6 @@
 # Reference implementation
 
-This is a working pipeline from the first project, tested again on a second one (a 48 s TikTok ad download): a 19 s Serbian jiu-jitsu podcast clip recorded off Instagram at 292×632, rendered to 1080×1920. Copy these files and adapt their data tables; don't rewrite them from scratch.
+This is a working pipeline from the first project: a 19 s Serbian jiu-jitsu podcast clip recorded off Instagram at 292×632, rendered to 1080×1920. It was tested again on a second project, a 48 s TikTok ad download. Copy these files and adapt their data tables; don't rewrite them from scratch.
 
 | File | What it does | What to change per project |
 |---|---|---|
