@@ -2,7 +2,7 @@ import sys, wave, json, numpy as np, sherpa_onnx
 M = sys.argv[1]; wav = sys.argv[2]; out = sys.argv[3]
 w = wave.open(wav); sr = w.getframerate()
 a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
-a = a[: int(33.0 * sr)]
+a = a[: int(float(sys.argv[4]) * sr)] if len(sys.argv) > 4 else a
 hop = int(0.02 * sr)
 db = np.array([20 * np.log10(np.sqrt(np.mean(a[i:i + hop] ** 2)) + 1e-9) for i in range(0, len(a) - hop, hop)])
 quiet = db < -30
