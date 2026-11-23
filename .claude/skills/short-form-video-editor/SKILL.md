@@ -86,6 +86,14 @@ Pipeline (the reference implementation is in `scripts/reference/`; adapt its dat
    Test about 25 key frames on a contact sheet *before* the full render, and fix what you see.
 5. **Encode:** `noise=alls=3:allf=t` grain, libx264 CRF 16 slow, yuv420p, AAC 320k 48 kHz, `+faststart`.
 
+For a new project, write a thin `render_<project>.py` that `exec`s the reference `render.py` (everything before its `if __name__` block, splitting with `rsplit(..., 1)`) to reuse its helpers, then overrides SEGS/MAP, captions and the scene functions. Re-render only the frame ranges you fix (`render.py <wd> <first> <last>`), then re-encode.
+
+Lessons from QC:
+- Source transitions (black frames, wipe stripes) live inside the "clean" footage. Check frames around every source cut and hold the first clean frame under your own transition. Keep the audio as it is.
+- White text on frosted glass over bright content washes out. Use dark glass there.
+- Don't leave a graphic beat empty for more than about 1.5 s (for example, a chip on a blurred background); bring the next element in on an earlier word.
+- A 1 fps sampled sheet can be about 0.5 s off. Judge timing by frame index.
+
 Fallbacks when assets are missing:
 - No B-roll: render animated type inside the portal.
 - No music: synthesize original music.
