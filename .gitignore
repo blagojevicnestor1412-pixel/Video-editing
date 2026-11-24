@@ -1,3 +1,6 @@
 endscreen/build/
 __pycache__/
 output/
+thumbnail/output/
+thumbnail/assets/source_photo.png
+thumbnail/assets/people_mask_photo.png
