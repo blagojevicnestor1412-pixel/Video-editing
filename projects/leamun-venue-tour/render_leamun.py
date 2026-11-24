@@ -15,8 +15,73 @@ NAVY = (22, 36, 92); NAVY2 = (12, 20, 56); GOLD = (232, 184, 74); GOLD_D = (150,
 def base_idx(i):
     i = max(0, min(NBASE - 1, i))
     return Image.open(f"{WD}/base/{i+1:04d}.jpg").convert("RGBA")
+import json as _json
+CAPL = _json.load(open(f"{WD}/an/captimes.json"))
+_OVR = {("LEAMUN...", "k0"): 7, ("and you don't know", "k0"): 28, ("where to go?", "k0"): 28,
+        ("Come with me", "k0"): 75, ("Now, quick!", "k0"): 630, ("Let's go back outside", "k0"): 1582,
+        ("Registration and payment", "k1"): 536, ("will be done upon entry", "k1"): 536,
+        ("The delegation of France", "k0"): 972, ("would like to raise a point", "k0"): 972,
+        ("Fine...", "k0"): 1122, ("Fine...", "k1"): 1135,
+        ("Terazije is a very busy area", "k1"): 1767, ("so if you get lost", "k1"): 1767,
+        ("Registration and payment", "k0"): 470, ("will be done upon entry", "k0"): 470,
+        ("Let's go on break", "k0"): 1195,
+        ("Now, quick!", "k1"): 721, ("Let's go to the committee rooms,", "k1"): 721, ("debate is starting soon", "k1"): 721,
+        ("The delegation of France", "k1"): 1031, ("would like to raise a point", "k1"): 1031}
+for L_ in CAPL:
+    for key in ("k0", "k1"):
+        if (L_["text"], key) in _OVR: L_[key] = _OVR[(L_["text"], key)]
+    if L_["text"] == "Fine...": L_["rect"] = [220, 1150, 700, 1335]
+# lines of a block that appear within 3 frames of each other start together; start 2 frames early for safety
+for L_ in CAPL:
+    grp = [M for M in CAPL if M["block"] == L_["block"] and abs(M["k0"] - L_["k0"]) <= 3]
+    L_["k0s"] = min(M["k0"] for M in grp) - 2; L_["k0t"] = L_["k0s"] - 1
+def _ov(r1, r2): return not (r1[2] < r2[0] or r2[2] < r1[0] or r1[3] + 30 < r2[1] or r2[3] + 30 < r1[1])
+for L_ in CAPL:
+    L_["exit"] = not any(M["block"] != L_["block"] and L_["k1"] - 8 <= M["k0"] <= L_["k1"] + 7 and _ov(L_["rect"], M["rect"]) for M in CAPL)
+
+@lru_cache(maxsize=64)
+def cap_pill(text, kw, rw, rh):
+    padx, pady = 26, 14
+    ph = rh + 2 * pady
+    size = int(min(92, max(40, ph * 0.56)))
+    while True:
+        f = font("Black", size)
+        tw = f.getlength(text)
+        if tw + 64 <= W - 40 or size <= 34: break
+        size -= 2
+    pw = int(max(rw + 2 * padx, tw + 64)); pw = min(pw, W - 20)
+    L = rrect(pw, ph, int(min(28, ph * 0.3)), NAVY + (255,), outline=GOLD + (170,), width=2)
+    T = Image.new("RGBA", (pw, ph), (0, 0, 0, 0)); d = ImageDraw.Draw(T)
+    x = (pw - tw) / 2; y = ph / 2
+    if kw and kw in text:
+        i = text.index(kw); parts = [(text[:i], WHITE), (kw, GOLD), (text[i + len(kw):], WHITE)]
+    else:
+        parts = [(text, WHITE)]
+    for seg, col in parts:
+        if not seg: continue
+        d.text((x, y), seg, font=f, fill=col, anchor="lm"); x += f.getlength(seg)
+    return L, T
+
+_DRAW = sorted(CAPL, key=lambda L_: -L_["k0s"])   # older captions on top while a newer one pre-rolls
+def draw_caps(img, k):
+    for L_ in _DRAW:
+        k0, k1 = L_["k0s"], L_["k1"]
+        if not (k0 <= k <= k1 + (6 if L_["exit"] else 0)): continue
+        x0, y0, x1, y1 = L_["rect"]
+        box, txt = cap_pill(L_["text"], L_["kw"], x1 - x0, y1 - y0)
+        cx = min(max((x0 + x1) / 2, box.width / 2 + 10), W - box.width / 2 - 10); cy = (y0 + y1) / 2
+        if k <= k1:
+            a_in = eo(clamp((k - L_["k0t"] + 1) / 4))
+            lay = box.copy(); lay.alpha_composite(fade(txt, a_in), (0, int(16 * (1 - a_in))))
+            img.alpha_composite(lay, (int(cx - box.width / 2), int(cy - box.height / 2)))
+        else:
+            q = (k - k1) / 6
+            lay = box.copy(); lay.alpha_composite(txt)
+            put_center(img, lay, cx, cy - 20 * ei(q), 1 - 0.1 * ei(q), 1 - ei(q))
+
 def plate(t):
     k = round(t * FPS); img = base_idx(k).copy()
+    draw_caps(img, k)
     if 40 <= k <= 90:          # hide the "screen recording not available" toast at the bottom edge
         z = 1.04 if t < 2.5 else 1.04 - 0.04 * eio(clamp((t - 2.5) / 0.4))
         img = zoom(img, z, 0.5, 0.45)
@@ -569,7 +634,7 @@ def render(fi):
     img = reg_chips(img, t); img = badge(img, t); img = debate_timer(img, t)
     img = france(img, t); img = out_of_order(img, t); img = session_end(img, t)
     img = chips_row(img, t, [(40.30, "BREAK TIME", "☕", GOLD, NAVY)], 41.35, 1500)
-    img = chips_row(img, t, [(42.40, "FOOD", "🍕", (255, 255, 255), NAVY), (42.90, "DRINKS", "🥤", (255, 255, 255), NAVY)], 44.45, 1500)
+    img = chips_row(img, t, [(42.40, "FOOD", "🍕", (255, 255, 255), NAVY), (42.90, "DRINKS", "🥤", (255, 255, 255), NAVY)], 44.45, 1550)
     img = street(img, t); img = map_pulse(img, t)
     img = chips_row(img, t, [(61.0, "LEAMUN IS RIGHT NEXT DOOR", "📍", NAVY, WHITE)], 63.35, 760)
     img = cal(img, t)
