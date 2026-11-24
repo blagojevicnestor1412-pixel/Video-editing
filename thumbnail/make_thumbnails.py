@@ -43,19 +43,56 @@ main = nd.binary_dilation(main, iterations=6)
 matte = matte * main
 matte = ss(matte, 0.08, 0.92)
 
-# remove backdrop pieces the matte caught: blue sponsor logo in the hair of the middle
-# guy and the red sign fragment by the right guy's hand
+# clean-up of backdrop pieces the matte caught (classic retouch, no generation)
+matte_orig = matte.copy()
 R, G, B = photo[..., 0], photo[..., 1], photo[..., 2]
 yy_, xx_ = np.mgrid[0:PH, 0:PW]
-blue = (B - R > 0.08) & (B > 0.30)
+disk = lambda r: (np.add.outer(np.arange(-r, r + 1) ** 2, np.arange(-r, r + 1) ** 2) <= r * r)
+
+# 1) middle guy: a bit of the blue sponsor logo shows through his hair.
+#    Rebuild a smooth hair contour and fill those pixels from the surrounding hair.
 box_head = (xx_ > 600) & (xx_ < 700) & (yy_ > 520) & (yy_ < 620)
-red = ((R - G > 0.30) & (G < 0.36)) | ((R + G + B > 2.0) & (np.ptp(photo, axis=2) < 0.16))
-box_hand = (xx_ > 950) & (xx_ < 990) & (yy_ > 835) & (yy_ < 890)
-kill = nd.binary_dilation((blue & box_head) | (red & box_hand), iterations=2)
-matte = matte * (1 - cv2.GaussianBlur(kill.astype(np.float32), (0, 0), 1.0))
+blue = nd.binary_dilation((B - R > 0.06) & (B > 0.25) & box_head, iterations=2)
+hair = (matte > 0.5) & ~blue
+hair_closed = nd.binary_closing(hair, structure=disk(7)) & box_head
+hair_closed = nd.binary_opening(hair_closed, structure=disk(2))
+inp = cv2.inpaint((photo * 255).astype(np.uint8), (blue * 255).astype(np.uint8), 6, cv2.INPAINT_TELEA)
+k = cv2.GaussianBlur(blue.astype(np.float32), (0, 0), 1.2)[..., None]
+photo = photo * (1 - k) + (inp.astype(np.float32) / 255) * k
+head_m = cv2.GaussianBlur(hair_closed.astype(np.float32), (0, 0), 1.0)
+bh = cv2.GaussianBlur(box_head.astype(np.float32), (0, 0), 3)
+blue_zone = cv2.GaussianBlur(nd.binary_dilation(blue, iterations=10).astype(np.float32), (0, 0), 3)
+matte = matte * (1 - blue_zone * bh) + head_m * blue_zone * bh
+
+# 2) right guy's hand: fingers overlap a red sign with white lettering.
+#    Colour-unmix each pixel into "skin" vs "sign" to get a clean finger matte and
+#    spill-free skin colour (same idea as a keyer's despill), then drop the sign.
+R, G, B = photo[..., 0], photo[..., 1], photo[..., 2]
+box_hand = (xx_ > 958) & (xx_ < 1015) & (yy_ > 800) & (yy_ < 905)
+sign_px = box_hand & (R - G > 0.45) & (G < 0.3)
+Rd = np.median(photo[sign_px], axis=0)
+skin_px = (xx_ > 975) & (xx_ < 1005) & (yy_ > 790) & (yy_ < 830) & (matte > 0.9) & (R - G > 0.05)
+Sk = np.median(photo[skin_px], axis=0)
+a_skin = np.clip((G - Rd[1]) / (Sk[1] - Rd[1]), 0, 1)
+white_text = ((B > Sk[2] + 0.18) & (np.ptp(photo, axis=2) < 0.2)) | ((B > G - 0.035) & (G > 0.45))
+a_skin[white_text] = 0
+a_skin = cv2.GaussianBlur(ss(a_skin, 0.25, 0.85).astype(np.float32), (0, 0), 0.7)
+unmixed = (photo - (1 - a_skin[..., None]) * Rd) / np.maximum(a_skin[..., None], 0.25)
+unmixed = np.clip(unmixed, 0, 1)
+# keep the natural skin hue; take only the shading from the unmixed result
+shade = np.clip(unmixed[..., 1] / max(Sk[1], 1e-3), 0.55, 1.25)
+unmixed = np.clip(Sk[None, None, :] * shade[..., None], 0, 1)
+# only where the sign actually was (near-sign zone), elsewhere untouched
+zone = cv2.GaussianBlur(nd.binary_dilation((R - G > 0.38) & box_hand | (white_text & box_hand),
+                                           iterations=3).astype(np.float32), (0, 0), 1.2)
+photo = photo * (1 - zone[..., None]) + unmixed * zone[..., None]
+matte = matte * (1 - zone) + np.minimum(matte, a_skin) * zone
+# sign lettering left of the index finger (same pink as skin after blur) - mask it out by hand
+letters = ((xx_ >= 958) & (xx_ <= 976) & (yy_ >= 846) & (yy_ <= 882)) | ((xx_ >= 980) & (xx_ <= 988) & (yy_ >= 855) & (yy_ <= 867)) | ((xx_ >= 975) & (xx_ <= 980) & (yy_ >= 863) & (yy_ <= 872))
+matte = matte * (1 - cv2.GaussianBlur(letters.astype(np.float32), (0, 0), 1.0))
 
 # ------------------------------------------------------------------ background plate
-hole = nd.binary_dilation(matte > 0.05, iterations=14).astype(np.uint8) * 255
+hole = nd.binary_dilation(np.maximum(matte, matte_orig) > 0.05, iterations=14).astype(np.uint8) * 255
 bg8 = (photo * 255).astype(np.uint8)
 small = cv2.resize(bg8, (PW // 2, PH // 2), interpolation=cv2.INTER_AREA)
 small_hole = cv2.resize(hole, (PW // 2, PH // 2), interpolation=cv2.INTER_NEAREST)
