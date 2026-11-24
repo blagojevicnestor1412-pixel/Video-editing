@@ -181,6 +181,14 @@ THUMB_D = ("M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17
 BELL_D = ("M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5"
           "-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z")
 PLAY_D = "M8 5v14l11-7z"
+PIN_D = ("M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12"
+         "-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z")
+TIKTOK_D = ("M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03"
+            "c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94"
+            "-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49"
+            ".18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37"
+            "-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61"
+            ".19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z")
 
 
 def make_grain(seed, size=512):
@@ -203,6 +211,9 @@ class Assets:
         self.bell_w = svg_icon(BELL_D, 256, WHITE)
         self.bell_c = svg_icon(BELL_D, 256, INK)
         self.play = svg_icon(PLAY_D, 128, WHITE)
+        self.pin = svg_icon(PIN_D, 256, WHITE)
+        self.tiktok_w = svg_icon(TIKTOK_D, 256, WHITE)
+        self.tiktok_c = svg_icon(TIKTOK_D, 256, CYAN)
         self.grain = [make_grain(s) for s in range(6)]
         rng = np.random.default_rng(10)
         n = 520
@@ -441,54 +452,92 @@ def draw_sweep(cv, L, cx, cy, s, k, strength):
     cv.restore()
 
 
-def draw_title(cv, t):
-    text = "THANKS FOR WATCHING"
-    font = skia.Font(TF_BOLD, 118)
-    tracking = 30
-    widths = [font.measureText(ch) for ch in text]
-    total = sum(widths) + tracking * (len(text) - 1)
+ADDRESS = "GAVRILA PRINCIPA 48, BEOGRAD"
+INSTAGRAM = "@10pbelgrade"
+TIKTOK = "@10pbelgrade"
+
+
+def draw_instagram_glyph(cv, cx, cy, s, alpha):
+    w = 30 * s
+    p = stroke_paint(WHITE, alpha, 5.5 * s)
+    cv.drawRRect(skia.RRect.MakeRectXY(skia.Rect.MakeXYWH(cx - w, cy - w, 2 * w, 2 * w), 9 * s, 9 * s), p)
+    cv.drawCircle(cx, cy, 13 * s, p)
+    cv.drawCircle(cx + 18 * s, cy - 18 * s, 3.6 * s, fill_paint(WHITE, alpha))
+
+
+def draw_contacts(cv, t, a):
+    font = skia.Font(TF_BOLD, 70)
+    tracking = 5
+    items = [("pin", ADDRESS), ("ig", INSTAGRAM), ("tt", TIKTOK)]
+    BADGE_R = 54
+    GAP = 30
+    SEP = 120
+    widths = []
+    for _, txt in items:
+        tw = sum(font.measureText(ch) for ch in txt) + tracking * (len(txt) - 1)
+        widths.append(2 * BADGE_R + GAP + tw)
+    total = sum(widths) + SEP * (len(items) - 1)
     x = 1920 - total / 2
-    # flanking lines
-    lp = ease_out_expo(prog(t, 1.35, 2.3))
-    if lp > 0:
-        ln = 330 * lp
-        gap = total / 2 + 60
-        for sgn in (-1, 1):
-            p = skia.Paint(AntiAlias=True)
-            x0 = 1920 + sgn * gap
-            x1 = x0 + sgn * ln
-            p.setShader(skia.GradientShader.MakeLinear(
-                [(x0, 0), (x1, 0)], [ci(CYAN, 0.9), ci(PURPLE, 0)]))
-            p.setStrokeWidth(4)
-            cv.drawLine(x0, TITLE_Y - 40, x1, TITLE_Y - 40, p)
-            dp = fill_paint(CYAN, lp)
-            cv.save()
-            cv.translate(x0 - sgn * 22, TITLE_Y - 40)
-            cv.rotate(45)
-            cv.drawRect(skia.Rect.MakeXYWH(-7, -7, 14, 14), dp)
-            cv.restore()
-    grad = skia.GradientShader.MakeLinear(
-        [(0, TITLE_Y - 90), (0, TITLE_Y + 5)], [ci((255, 255, 255)), ci((214, 200, 255))])
-    clip_top = TITLE_Y - 110
-    for i, (ch, w_) in enumerate(zip(text, widths)):
-        k = prog(t, 1.3 + i * 0.028, 1.3 + i * 0.028 + 0.55)
+    cy = TITLE_Y - 24  # visual centre of the row
+    for idx, ((kind, txt), w_) in enumerate(zip(items, widths)):
+        t0 = 1.3 + idx * 0.16
+        k = prog(t, t0, t0 + 0.8)
         if k > 0:
             e = ease_out_expo(k)
-            p = skia.Paint(AntiAlias=True)
-            p.setShader(grad)
-            p.setAlphaf(clamp(k * 2.5))
+            al = clamp(k * 2.2)
+            dy = (1 - e) * 60
+            bx, by = x + BADGE_R, cy + dy
+            bs = ease_out_back(prog(t, t0, t0 + 0.6), 2.0)
+            # badge
+            cv.drawCircle(bx, by, BADGE_R * bs + 14, fill_paint(PURPLE, 0.30 * al, blur=20))
+            bp = skia.Paint(AntiAlias=True)
+            bp.setShader(skia.GradientShader.MakeLinear(
+                [(bx - BADGE_R, by - BADGE_R), (bx + BADGE_R, by + BADGE_R)],
+                [ci(PURPLE, al), ci((96, 70, 190), al)]))
+            cv.drawCircle(bx, by, BADGE_R * bs, bp)
+            cv.drawCircle(bx, by, BADGE_R * bs, stroke_paint(CYAN, 0.85 * al, 3.5))
+            if bs > 0.05:
+                if kind == "pin":
+                    draw_image_centered(cv, a.pin, bx, by, 0.27 * bs, al)
+                elif kind == "ig":
+                    draw_instagram_glyph(cv, bx, by, bs, al)
+                else:
+                    draw_image_centered(cv, a.tiktok_c, bx - 3 * bs, by - 3 * bs, 0.25 * bs, 0.9 * al)
+                    draw_image_centered(cv, a.tiktok_w, bx, by, 0.25 * bs, al)
+            # text with mask-reveal
+            tx = x + 2 * BADGE_R + GAP
+            base = cy + 25
             cv.save()
-            cv.clipRect(skia.Rect.MakeLTRB(x - 10, clip_top, x + w_ + 10, TITLE_Y + 30))
-            cv.drawString(ch, x, TITLE_Y + (1 - e) * 120, font, p)
+            cv.clipRect(skia.Rect.MakeLTRB(tx - 10, cy - 70, x + w_ + 20, cy + 60))
+            tp = skia.Paint(AntiAlias=True)
+            tp.setShader(skia.GradientShader.MakeLinear(
+                [(0, base - 55), (0, base + 5)], [ci(WHITE), ci((214, 200, 255))]))
+            tp.setAlphaf(al)
+            xx = tx - (1 - e) * 40
+            for ch in txt:
+                cv.drawString(ch, xx, base + dy * 0.6, font, tp)
+                xx += font.measureText(ch) + tracking
             cv.restore()
-        x += w_ + tracking
-    # subtle sub-caption
-    k = prog(t, 2.0, 2.8)
-    if k > 0:
-        f2 = skia.Font(TF_SEMI, 46)
-        p = fill_paint(CYAN, 0.75 * ease_out_cubic(k))
-        draw_text_center(cv, "10TH PLANET JIU JITSU  •  BELGRADE", 1920, TITLE_Y + 78 + (1 - ease_out_cubic(k)) * 20,
-                         f2, p, tracking=14)
+        # separator
+        if idx < len(items) - 1:
+            sk = ease_out_expo(prog(t, t0 + 0.3, t0 + 1.0))
+            if sk > 0:
+                sx = x + w_ + SEP / 2
+                hh = 46 * sk
+                sp = skia.Paint(AntiAlias=True)
+                sp.setShader(skia.GradientShader.MakeLinear(
+                    [(sx, cy - hh), (sx, cy + hh)], [ci(CYAN, 0), ci(CYAN, 0.9), ci(CYAN, 0)], [0, .5, 1]))
+                cv.drawRect(skia.Rect.MakeXYWH(sx - 2, cy - hh, 4, 2 * hh), sp)
+        x += w_ + SEP
+    # thin accent line under the row
+    lk = ease_out_expo(prog(t, 1.6, 2.6))
+    if lk > 0:
+        half = (total / 2 + 80) * lk
+        lp = skia.Paint(AntiAlias=True)
+        lp.setShader(skia.GradientShader.MakeLinear(
+            [(1920 - half, 0), (1920 + half, 0)],
+            [ci(PURPLE, 0), ci(CYAN, 0.55), ci(PURPLE, 0)], [0, .5, 1]))
+        cv.drawRect(skia.Rect.MakeXYWH(1920 - half, cy + 92, 2 * half, 3), lp)
 
 
 def rounded_rect_path(x, y, w, h, r):
@@ -804,7 +853,7 @@ def render_frame(i):
     draw_slot(cv, t, SLOT_R_X, SLOT_Y, 2.0, "RECOMMENDED", 1, a)
     draw_subscribe_ring(cv, t)
     draw_cta_row(cv, t, a)
-    draw_title(cv, t)
+    draw_contacts(cv, t, a)
     draw_logo(cv, t, a)
     draw_post(cv, t, i, a)
     img = surf.makeImageSnapshot()
