@@ -944,7 +944,8 @@ def laurel(cv, cx, cy, size, lines):
 
 
 def film(bars=True, top_text=None, bottom_text="TATAMY   •   SLOVAČKA   •   BJJ VLOG", grade="teal",
-         layout="center", ppl=(1.55, 960, 300), laurels=False, bar=132):
+         layout="center", ppl=(1.55, 960, 300), laurels=False, bar=132,
+         line1=(("DOBILI ", "white"), ("BATINE", "red")), size1=170, line2="U SLOVAČKOJ?", size2=92):
     canvas = bg_plate(gain=0.45, sat=0.8, blur=10)
     s_, cx_, hy_ = ppl
     p, a = people(s_, cx_, hy_, "bw" if grade == "bw" else "color")
@@ -981,13 +982,14 @@ def film(bars=True, top_text=None, bottom_text="TATAMY   •   SLOVAČKA   •  
             f = skia.Font(ARCHIVO, 30)
             tracked(cv, top_text, 960 - tracked_width(top_text, f, 12) / 2, 80, f, pg, 12)
         if layout == "center":
-            f1 = skia.Font(ANTON, 170)
-            x = 960 - tracked_width("DOBILI BATINE", f1, 10) / 2
-            tracked(cv, "DOBILI BATINE", x + 6, 818, f1, sh, 10)
-            x = tracked(cv, "DOBILI ", x, 810, f1, white, 10)
-            tracked(cv, "BATINE", x, 810, f1, red, 10)
-            f2 = skia.Font(ANTON, 92)
-            t2 = "U SLOVAČKOJ?"
+            f1 = skia.Font(ANTON, size1)
+            full1 = "".join(t for t, _ in line1)
+            x = 960 - tracked_width(full1, f1, 10) / 2
+            tracked(cv, full1, x + 6, 818, f1, sh, 10)
+            for t, c in line1:
+                x = tracked(cv, t, x, 810, f1, red if c == "red" else white, 10)
+            f2 = skia.Font(ANTON, size2)
+            t2 = line2
             tracked(cv, t2, 960 - tracked_width(t2, f2, 26) / 2 + 4, 928, f2, sh, 26)
             tracked(cv, t2, 960 - tracked_width(t2, f2, 26) / 2, 920, f2, light, 26)
             by = H - 58
@@ -1024,6 +1026,10 @@ FILM = {
     "3_naslov_levo": dict(layout="left", ppl=(1.62, 1290, 300)),
     "4_veci_ljudi_naslov_u_traci": dict(layout="bar", ppl=(1.95, 960, 190), bar=70),
     "5_zlatni_lovor": dict(grade="warm", laurels=True, ppl=(1.55, 860, 300)),
+    "6_svinjac": dict(bars=False, bottom_text="BJJ VLOG", line1=(("SVINJAC", "red"),), size1=200,
+                      line2="U SLOVAČKOJ!", size2=92),
+    "7_svinjac_belo": dict(bars=False, bottom_text="BJJ VLOG", line1=(("SVINJAC", "white"),), size1=200,
+                           line2="U SLOVAČKOJ!", size2=92),
 }
 
 if __name__ == "__main__":
