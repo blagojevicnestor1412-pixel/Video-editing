@@ -284,7 +284,7 @@ def paste_rgba_rot(canvas, rgba, cx, cy, angle, border=0, shadow=0.6):
     return over(canvas, lay[..., :3], lay[..., 3])
 
 
-def title_f(lines, size, cx, y0, gap, rot, box_rgb, skew=-0.18, stroke=18):
+def title_f(lines, size, cx, y0, gap, rot, box_rgb, skew=-0.18, stroke=18, tf=None):
     surf = skia.Surface(W, H)
     cv = surf.getCanvas()
     cv.clear(skia.ColorTRANSPARENT)
@@ -292,7 +292,7 @@ def title_f(lines, size, cx, y0, gap, rot, box_rgb, skew=-0.18, stroke=18):
     cv.rotate(rot)
     cv.skew(skew, 0)
     cv.translate(-cx, -y0)
-    f = skia.Font(TF_TITLE, size)
+    f = skia.Font(tf or TF_TITLE, size)
     layout, y = [], y0
     for runs in lines:
         wtot = sum(f.measureText(t) for t, _ in runs)
@@ -377,6 +377,54 @@ def build_f():
     canvas = np.clip(canvas + rng.normal(0, 0.01, (H, W, 1)), 0, 1)
     return (canvas * 255 + 0.5).astype(np.uint8)
 
+
+TF_ARCHIVO = skia.Typeface.MakeFromFile(os.path.join(base.A, "fonts", "ArchivoBlack_400Regular.ttf"))
+
+
+def build_g():
+    """Title on top, new font, no coloured stage lights."""
+    s_bg = 1.95
+    bg = place(plate, s_bg, (W - base.PW * s_bg) / 2, -150 * s_bg)
+    bg = cv2.GaussianBlur(bg, (0, 0), 7)
+    canvas = np.clip(bg * 0.55 + 0.02, 0, 1)
+    canvas, _ = paste_logo(canvas, LOGO_10P, 70, 330, 800, shadow=0.45, blur=4.0, opacity=0.95)
+    canvas, _ = paste_logo(canvas, T_MARK, 1250, 330, 430, shadow=0.45, blur=4.0, opacity=0.95)
+
+    s, cxp, hy = 1.85, 960, 455
+    ox, oy = cxp - PEOPLE_ANCHOR[0] * s, hy - PEOPLE_ANCHOR[1] * s
+    ppl = place(photo, s, ox, oy)
+    pa = np.clip(place_alpha(matte, s, ox, oy), 0, 1)
+    pa = np.clip((pa - 0.04) / 0.96, 0, 1)
+    p = np.clip(ppl, 0, 1)
+    lum = p.mean(2, keepdims=True)
+    p = lum + (p - lum) * 1.15
+    p = 0.5 + (p - 0.5) * 1.10
+    p = sharpen(np.clip(p * 1.08, 0, 1), 1.1, 0.6)
+    sh = cv2.GaussianBlur(np.roll(pa, (14, 10), (0, 1)), (0, 0), 16) * 0.75
+    canvas = over(canvas, np.zeros(3), sh)
+    outline = cv2.dilate((pa > 0.5).astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13)))
+    outline = cv2.GaussianBlur(outline.astype(np.float32), (0, 0), 1.0) * (1 - ss(YY, 950, 1070))
+    canvas = over(canvas, np.ones(3), outline)
+    canvas = over(canvas, p, pa)
+
+    canvas = canvas * (1 - 0.40 * (1 - ss(YY, 0, 470)))[..., None]   # darker top band for the title
+    d = np.sqrt(((XX - W / 2) / (W / 2)) ** 2 + ((YY - H / 2) / (H / 2)) ** 2)
+    canvas = canvas * (1 - 0.28 * ss(d, 0.7, 1.5))[..., None]
+
+    lines = [[("DOBILI ", False), ("BATINE", True)], [("U SLOVAČKOJ?", False)]]
+    t, layout, f = title_f(lines, 132, 1075, 190, 172, -2, (226, 24, 30), skew=-0.12, stroke=14, tf=TF_ARCHIVO)
+    canvas = paste_rgba_rot(canvas, slovak_flag(230), 265, 312, 8, border=7, shadow=0.7)
+    canvas = over(canvas, t[..., :3], t[..., 3])
+    rng = np.random.default_rng(5)
+    canvas = np.clip(canvas + rng.normal(0, 0.01, (H, W, 1)), 0, 1)
+    return (canvas * 255 + 0.5).astype(np.uint8)
+
+
+if __name__ == "__main__":
+    img = Image.fromarray(build_g())
+    path = os.path.join(base.OUT, "thumbnail_G_tekst_gore.jpg")
+    img.save(path, quality=93, subsampling=0, optimize=True)
+    print("G", os.path.getsize(path) // 1024, "KB")
 
 if __name__ == "__main__":
     img = Image.fromarray(build_f())
