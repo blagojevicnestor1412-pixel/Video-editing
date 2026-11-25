@@ -476,10 +476,192 @@ CONCEPTS2 = {
     "10_tv_prenos": c10_broadcast,
 }
 
+
+# ====================================================================== round 3
+def centered_line(cv, parts, y, font, stroke=12, shadow=True):
+    total = sum(font.measureText(t) for t, *_ in parts)
+    x = 960 - total / 2
+    for part in parts:
+        t, c = part[0], part[1]
+        box = part[2] if len(part) > 2 else None
+        x += text_run(cv, t, x, y, font, c, stroke=0 if box else stroke, box=box, shadow=shadow)
+
+
+def c11_lineup():
+    g = 0.16 + 0.10 * np.exp(-(((XX - 960) / 900) ** 2 + ((YY - 500) / 600) ** 2))
+    canvas = np.repeat(g[..., None], 3, 2) * np.array([0.95, 0.97, 1.0])
+
+    def chart(cv):
+        f = skia.Font(ARCHIVO, 30)
+        for k, y in enumerate(range(240, 1080, 70)):
+            cm = 210 - k * 10
+            major = True
+            lp = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255, 120))
+            cv.drawRect(skia.Rect.MakeXYWH(0, y, W, 3), lp)
+            for xx in (24, W - 90):
+                cv.drawString(str(cm), xx, y - 10, f, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255, 170)))
+            for j in range(1, 5):
+                cv.drawRect(skia.Rect.MakeXYWH(0, y + j * 14, 40, 2), lp)
+                cv.drawRect(skia.Rect.MakeXYWH(W - 40, y + j * 14, 40, 2), lp)
+    canvas = put(canvas, skia_layer(chart))
+    p, a = people(1.62, 960, 420)
+    canvas = composite_people(canvas, p, a, outline=0, shadow=0.9)
+
+    def draw(cv):
+        centered_line(cv, [("DOBILI ", WHITE), ("BATINE", WHITE, RED), (" U SLOVAČKOJ?", WHITE)], 175, skia.Font(ANTON, 132))
+        r = skia.Rect.MakeXYWH(560, 930, 800, 120)
+        cv.drawRect(skia.Rect.MakeXYWH(572, 946, 800, 120), skia.Paint(Color=skia.Color(0, 0, 0, 150)))
+        cv.drawRect(r, skia.Paint(Color=skia.Color(14, 14, 18)))
+        f = skia.Font(ARCHIVO, 40)
+        for t, y, c in [("10TH PLANET BELGRADE", 980, (255, 255, 255)), ("TATAMY  •  SLOVAČKA", 1032, (230, 40, 46))]:
+            cv.drawString(t, 960 - f.measureText(t) / 2, y, f, skia.Paint(AntiAlias=True, Color=skia.Color(*c)))
+    canvas = put(canvas, skia_layer(draw))
+    return finish(canvas, vignette=0.35)
+
+
+def duotone(img, dark=(0.05, 0.0, 0.02), mid=(0.80, 0.07, 0.12), light=(1.0, 0.93, 0.90)):
+    l = (img * np.array([0.30, 0.59, 0.11])).sum(2, keepdims=True)
+    l = np.clip(0.5 + (l - 0.5) * 1.3, 0, 1)
+    d, m, li = (np.array(c) for c in (dark, mid, light))
+    lo = d + (m - d) * np.clip(l * 2, 0, 1)
+    hi = m + (li - m) * np.clip(l * 2 - 1, 0, 1)
+    return np.where(l < 0.5, lo, hi)
+
+
+def c12_duotone():
+    canvas = duotone(bg_plate(gain=0.6, blur=10)) * 0.55
+    p, a = people(1.80, 960, 455)
+    p = duotone(p)
+    canvas = composite_people(canvas, p, a, outline=0, shadow=0.9)
+
+    def draw(cv):
+        centered_line(cv, [("DOBILI ", WHITE), ("BATINE", (16, 10, 12), WHITE)], 205, skia.Font(ANTON, 175), stroke=14)
+        centered_line(cv, [("U SLOVAČKOJ?", WHITE)], 405, skia.Font(ANTON, 150), stroke=14)
+    canvas = put(canvas, skia_layer(draw))
+    canvas = v2.paste_rgba_rot(canvas, v2.slovak_flag(190), 1730, 300, -8, border=6, shadow=0.7)
+    canvas = v2.paste_rgba_rot(canvas, LOGO_10P[::2, ::2], 170, 300, 6, border=0, shadow=0.6) if False else canvas
+    canvas, _ = paste_logo(canvas, LOGO_10P, 60, 210, 230, shadow=0.6)
+    return finish(canvas, vignette=0.35, grain=0.02)
+
+
+def c13_magazine():
+    canvas = bg_plate(gain=0.40, sat=0.9, blur=10) * np.array([0.95, 0.97, 1.04])
+
+    def mast(cv):
+        f = skia.Font(ANTON, 330)
+        t = "10TH PLANET"
+        w = f.measureText(t)
+        sx = (W - 80) / w
+        cv.save(); cv.translate(40, 320); cv.scale(sx, 1)
+        cv.drawString(t, 0, 0, f, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)))
+        cv.restore()
+    m = skia_layer(mast)
+    canvas = over(canvas, np.zeros(3), cv2.GaussianBlur(np.roll(m[..., 3], (10, 6), (0, 1)), (0, 0), 10) * 0.5)
+    canvas = put(canvas, m)
+    p, a = people(1.75, 1080, 300)
+    canvas = composite_people(canvas, p, a, outline=0, shadow=0.9)
+    canvas = canvas * (1 - 0.6 * (1 - ss(XX, 250, 700)) * ss(YY, 340, 470))[..., None] * (1 - 0.55 * ss(YY, 700, 1080))[..., None]
+
+    def draw(cv):
+        f = skia.Font(ARCHIVO, 34)
+        cv.drawString("BELGRADE  •  JIU JITSU  •  VLOG", 46, 372, f, skia.Paint(AntiAlias=True, Color=skia.Color(230, 40, 46)))
+        x = 60
+        text_run(cv, "TATAMY", x, 520, skia.Font(ARCHIVO, 58), RED, stroke=8)
+        text_run(cv, "TURNIR U", x, 580, skia.Font(ARCHIVO, 44), WHITE, stroke=7)
+        text_run(cv, "SLOVAČKOJ", x, 632, skia.Font(ARCHIVO, 44), WHITE, stroke=7)
+        text_run(cv, "DOBILI BATINE", x, 900, skia.Font(ANTON, 140), WHITE, stroke=14)
+        text_run(cv, "U SLOVAČKOJ?", x, 1035, skia.Font(ANTON, 120), YELLOW, stroke=14)
+        # barcode
+        rng = np.random.default_rng(3)
+        bx, by = 1690, 900
+        cv.drawRect(skia.Rect.MakeXYWH(bx - 14, by - 14, 210, 150), skia.Paint(Color=skia.Color(255, 255, 255)))
+        xx = bx
+        while xx < bx + 180:
+            wbar = int(rng.integers(2, 7))
+            if rng.random() > 0.4:
+                cv.drawRect(skia.Rect.MakeXYWH(xx, by, wbar, 100), skia.Paint(Color=skia.Color(0, 0, 0)))
+            xx += wbar + 2
+        cv.drawString("10P-BGD", bx + 30, by + 128, skia.Font(ARCHIVO, 22), skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0)))
+    canvas = put(canvas, skia_layer(draw))
+    return finish(canvas, vignette=0.25)
+
+
+def c14_scoreboard():
+    canvas = bg_plate(gain=0.42, sat=1.0, blur=8)
+    canvas, _ = paste_logo(canvas, T_MARK, 1380, 300, 380, shadow=0.4, blur=4.5, opacity=0.85)
+    canvas, _ = paste_logo(canvas, LOGO_10P, 60, 320, 600, shadow=0.4, blur=4.5, opacity=0.85)
+    p, a = people(1.70, 960, 330)
+    canvas = composite_people(canvas, p, a, outline=6)
+    canvas = canvas * (1 - 0.65 * ss(YY, 760, 1080))[..., None]
+
+    def draw(cv):
+        bar = skia.RRect.MakeRectXY(skia.Rect.MakeXYWH(440, 40, 1040, 150), 26, 26)
+        sp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 160))
+        sp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 16))
+        cv.save(); cv.translate(8, 14); cv.drawRRect(bar, sp); cv.restore()
+        cv.drawRRect(bar, skia.Paint(AntiAlias=True, Color=skia.Color(16, 16, 22)))
+        cv.drawRect(skia.Rect.MakeXYWH(830, 40, 260, 150), skia.Paint(Color=skia.Color(*RED)))
+        f = skia.Font(ANTON, 120)
+        t = "? : ?"
+        cv.drawString(t, 960 - f.measureText(t) / 2, 160, f, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)))
+        f2 = skia.Font(ARCHIVO, 70)
+        cv.drawString("SRB", 625, 142, f2, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)))
+        cv.drawString("SVK", 1112, 142, f2, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)))
+        centered_line(cv, [("DOBILI ", WHITE), ("BATINE", YELLOW), (" U SLOVAČKOJ?", WHITE)], 1015, skia.Font(ANTON, 128))
+    canvas = put(canvas, skia_layer(draw))
+    canvas = v2.paste_rgba_rot(canvas, serbian_flag(130), 530, 115, 0, border=4, shadow=0.5)
+    canvas = v2.paste_rgba_rot(canvas, v2.slovak_flag(130), 1390, 115, 0, border=4, shadow=0.5)
+    return finish(canvas)
+
+
+def c15_camcorder():
+    canvas = bg_plate(gain=0.55, sat=1.0, blur=6) * np.array([1.05, 1.0, 0.94])
+    p, a = people(1.80, 960, 330)
+    canvas = composite_people(canvas, p, a, outline=0, shadow=0.8)
+    canvas = canvas * (1 - 0.55 * ss(YY, 650, 1000))[..., None]
+    # slight chromatic aberration + scanlines for the camcorder feel
+    ca = canvas.copy()
+    ca[..., 0] = np.roll(canvas[..., 0], 3, 1)
+    ca[..., 2] = np.roll(canvas[..., 2], -3, 1)
+    canvas = ca * (1 - 0.06 * (np.floor(YY / 3) % 2 == 0))[..., None]
+
+    def draw(cv):
+        wp = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255, 235))
+        wp.setStyle(skia.Paint.kStroke_Style); wp.setStrokeWidth(8)
+        L, m = 120, 60
+        for (x, y, sx, sy) in [(m, m, 1, 1), (W - m, m, -1, 1), (m, H - m, 1, -1), (W - m, H - m, -1, -1)]:
+            path = skia.Path(); path.moveTo(x, y + sy * L); path.lineTo(x, y); path.lineTo(x + sx * L, y)
+            cv.drawPath(path, wp)
+        cv.drawCircle(130, 130, 20, skia.Paint(AntiAlias=True, Color=skia.Color(*RED)))
+        f = skia.Font(ARCHIVO, 54)
+        cv.drawString("REC", 168, 150, f, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)))
+        bp = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)); bp.setStyle(skia.Paint.kStroke_Style); bp.setStrokeWidth(5)
+        cv.drawRect(skia.Rect.MakeXYWH(W - 250, 105, 120, 54), bp)
+        cv.drawRect(skia.Rect.MakeXYWH(W - 130, 120, 12, 24), skia.Paint(Color=skia.Color(255, 255, 255)))
+        for k in range(3):
+            cv.drawRect(skia.Rect.MakeXYWH(W - 240 + k * 36, 115, 28, 34), skia.Paint(Color=skia.Color(255, 255, 255)))
+        cp = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255, 160)); cp.setStrokeWidth(3)
+        
+        centered_line(cv, [("DOBILI ", WHITE), ("BATINE", WHITE, RED)], 860, skia.Font(ANTON, 150))
+        centered_line(cv, [("U SLOVAČKOJ?", WHITE)], 1000, skia.Font(ANTON, 120))
+    canvas = put(canvas, skia_layer(draw))
+    canvas, _ = paste_logo(canvas, LOGO_10P, W - 290, 190, 200, shadow=0.6)
+    canvas = v2.paste_rgba_rot(canvas, v2.slovak_flag(140), 190, 250, -6, border=4, shadow=0.6)
+    return finish(canvas, vignette=0.4, grain=0.022)
+
+
+CONCEPTS3 = {
+    "11_policijski_lineup": c11_lineup,
+    "12_duotone_crveno": c12_duotone,
+    "13_magazin": c13_magazine,
+    "14_semafor": c14_scoreboard,
+    "15_kamera_rec": c15_camcorder,
+}
+
 if __name__ == "__main__":
     os.makedirs(os.path.join(base.OUT, "concepts"), exist_ok=True)
     import sys
-    todo = CONCEPTS2 if "round2" in sys.argv else CONCEPTS
+    todo = CONCEPTS3 if "round3" in sys.argv else CONCEPTS2 if "round2" in sys.argv else CONCEPTS
     for name, fn in todo.items():
         img = Image.fromarray(fn())
         path = os.path.join(base.OUT, "concepts", f"koncept_{name}.jpg")
