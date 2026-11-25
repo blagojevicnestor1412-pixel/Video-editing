@@ -1019,7 +1019,7 @@ def film(bars=True, top_text=None, bottom_text="TATAMY   •   SLOVAČKA   •  
 
 FILM = {
     "0_bez_teksta_gore": dict(),
-    "1_bez_traka": dict(bars=False),
+    "1_bez_traka": dict(bars=False, bottom_text="TATAMY   •   SLOVAČKA"),
     "2_crno_belo": dict(grade="bw"),
     "3_naslov_levo": dict(layout="left", ppl=(1.62, 1290, 300)),
     "4_veci_ljudi_naslov_u_traci": dict(layout="bar", ppl=(1.95, 960, 190), bar=70),

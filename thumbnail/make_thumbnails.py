@@ -64,18 +64,24 @@ bh = cv2.GaussianBlur(box_head.astype(np.float32), (0, 0), 3)
 blue_zone = cv2.GaussianBlur(nd.binary_dilation(blue, iterations=10).astype(np.float32), (0, 0), 3)
 matte = matte * (1 - blue_zone * bh) + head_m * blue_zone * bh
 
-# 1b) second guy: orange "4FITNESS" sponsor logo shows through under his right ear.
-#     Drop only clearly-orange backdrop pixels, and neutralise the orange cast on the ear lobe.
-box_ear = (xx_ >= 466) & (xx_ <= 488) & (yy_ >= 594) & (yy_ <= 624)
+# 1b) second guy: his right ear lobe is lit orange by the "4FITNESS" logo behind it.
+#     Keep the full ear shape from the matte; recolour the orange cast to his own ear skin tone
+#     (sampled from the upper ear), keeping the original shading.
+box_ear = (xx_ >= 468) & (xx_ <= 490) & (yy_ >= 592) & (yy_ <= 620)
+ear_skin = photo[592:601, 474:482].reshape(-1, 3)
+ear_skin = ear_skin[(ear_skin[:, 2] / np.maximum(ear_skin[:, 0], 1e-3)) > 0.5].mean(0)
 br = photo[..., 2] / np.maximum(photo[..., 0], 1e-3)
-logo_px = box_ear & (br < 0.33)
-matte = matte * (1 - cv2.GaussianBlur(logo_px.astype(np.float32), (0, 0), 0.8))
-skin_ref = np.array([0.87, 0.60, 0.49])
-lum = photo.mean(2, keepdims=True)
-skin_tone = np.clip(skin_ref * lum / skin_ref.mean(), 0, 1)
-cast = (box_ear & (br < 0.52) & ~logo_px).astype(np.float32)
+cast = (box_ear & (br < 0.55) & (matte > 0.3)).astype(np.float32)
 cast = cv2.GaussianBlur(cast, (0, 0), 1.0)[..., None]
-photo = photo * (1 - cast) + skin_tone * cast
+lum = (photo * np.array([0.30, 0.59, 0.11])).sum(2, keepdims=True)
+lum = 0.25 * lum + 0.75 * cv2.GaussianBlur(lum, (0, 0), 1.6)[..., None]   # even out logo specks on the lobe
+ref_l = float((ear_skin * np.array([0.30, 0.59, 0.11])).sum())
+recol = np.clip(ear_skin * (lum / ref_l), 0, 1)
+photo = photo * (1 - cast) + recol * cast
+# smooth the ear silhouette (no holes, no jagged bits)
+ear_m = nd.binary_fill_holes(nd.binary_closing(matte > 0.5, structure=disk(3)))
+ear_add = cv2.GaussianBlur(ear_m.astype(np.float32), (0, 0), 0.8) * box_ear
+matte = np.maximum(matte, ear_add)
 
 # 2) right guy's hand: fingers overlap a red sign with white lettering.
 #    Colour-unmix each pixel into "skin" vs "sign" to get a clean finger matte and
