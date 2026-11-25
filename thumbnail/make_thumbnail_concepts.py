@@ -275,9 +275,212 @@ CONCEPTS = {
     "5_tekst_iza_nas": c5_behind_text,
 }
 
+
+# ====================================================================== round 2
+def serbian_flag(width=300):
+    """Serbian civil flag (red/blue/white tricolour), with the same cloth wave as the Slovak one."""
+    fw, fh = width, int(width * 2 / 3)
+    arr = np.zeros((fh, fw, 4), np.float32)
+    for i, c in enumerate([(198, 54, 60), (12, 64, 118), (255, 255, 255)]):
+        arr[int(i * fh / 3):int((i + 1) * fh / 3) + 1, :, :3] = np.array(c) / 255
+    arr[..., 3] = 1
+    yy, xx = np.mgrid[0:fh, 0:fw].astype(np.float32)
+    ph = xx / fw * 2 * np.pi * 1.3
+    arr = cv2.remap(arr, xx, yy - np.sin(ph) * fh * 0.035, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    arr[..., :3] = np.clip(arr[..., :3] * (1 + 0.16 * np.cos(ph))[..., None], 0, 1)
+    return arr
+
+
+def c6_route():
+    canvas = bg_plate(gain=0.30, sat=0.7, blur=10)
+    p, a = people(1.55, 1340, 480)
+    canvas = composite_people(canvas, p, a, outline=6)
+    canvas = canvas * (1 - 0.55 * (1 - ss(XX, 350, 820)))[..., None]
+    canvas = v2.paste_rgba_rot(canvas, serbian_flag(200), 190, 190, -6, border=6, shadow=0.7)
+    canvas = v2.paste_rgba_rot(canvas, v2.slovak_flag(200), 760, 150, 6, border=6, shadow=0.7)
+
+    def draw(cv):
+        path = skia.Path()
+        path.moveTo(300, 150)
+        path.quadTo(475, -10, 640, 120)
+        p = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255))
+        p.setStyle(skia.Paint.kStroke_Style)
+        p.setStrokeWidth(7)
+        p.setStrokeCap(skia.Paint.kRound_Cap)
+        p.setPathEffect(skia.DashPathEffect.Make([22, 18], 0))
+        cv.drawPath(path, p)
+        head = skia.Path()
+        head.moveTo(662, 138); head.lineTo(618, 132); head.lineTo(646, 98); head.close()
+        cv.drawPath(head, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)))
+        text_run(cv, "SRBIJA", 120, 330, skia.Font(ARCHIVO, 44), (220, 222, 230), stroke=6)
+        text_run(cv, "SLOVAČKA", 640, 300, skia.Font(ARCHIVO, 44), (220, 222, 230), stroke=6)
+        text_run(cv, "DOBILI", 80, 540, skia.Font(ANTON, 150), WHITE, stroke=14)
+        text_run(cv, "BATINE?", 80, 735, skia.Font(ANTON, 190), WHITE, stroke=0, box=RED)
+    canvas = put(canvas, skia_layer(draw))
+    canvas, _ = paste_logo(canvas, LOGO_10P, 60, 900, 200, shadow=0.6)
+    return finish(canvas)
+
+
+def c7_polaroid():
+    canvas = bg_plate(gain=0.25, sat=0.5, blur=16) * np.array([1.05, 1.0, 0.92])
+    # the "photo" inside the polaroid
+    inner = bg_plate(gain=0.55, sat=1.0, blur=6)
+    p, a = people(1.30, 960, 300)
+    inner = composite_people(inner, p, a, outline=0, shadow=0.6)
+    ph = inner[170:790, 410:1510]
+    ph = np.clip(0.04 + ph * 0.96, 0, 1)
+    pw, phh = ph.shape[1], ph.shape[0]
+    m = 34
+    card = np.ones((phh + m + 150, pw + 2 * m, 4), np.float32)
+    card[..., :3] = np.array([0.97, 0.96, 0.93])
+    card[m:m + phh, m:m + pw, :3] = ph
+    pil = Image.fromarray((card * 255).astype(np.uint8))
+    card = np.array(pil.resize((int(pil.width * 0.92), int(pil.height * 0.92)), Image.LANCZOS)).astype(np.float32) / 255
+
+    def caption(cv):
+        pass
+    canvas = v2.paste_rgba_rot(canvas, card, 700, 545, 4, border=0, shadow=0.85)
+
+    def draw(cv):
+        cv.save(); cv.rotate(4, 700, 545)
+        f = skia.Font(ARCHIVO, 36)
+        t = "10TH PLANET BELGRADE  ×  TATAMY"
+        cv.drawString(t, 700 - f.measureText(t) / 2, 545 + card.shape[0] / 2 - 52, f,
+                      skia.Paint(AntiAlias=True, Color=skia.Color(40, 40, 46)))
+        for (tx, ty, ang) in [(290, 545 - card.shape[0] / 2 + 6, -30), (1110, 545 - card.shape[0] / 2 + 6, 28)]:
+            cv.save(); cv.rotate(ang, tx, ty)
+            cv.drawRect(skia.Rect.MakeXYWH(tx - 90, ty - 26, 180, 52),
+                        skia.Paint(AntiAlias=True, Color=skia.Color(235, 225, 196, 210)))
+            cv.restore()
+        cv.restore()
+        x = 1360
+        text_run(cv, "DOBILI", x, 330, skia.Font(ANTON, 150), WHITE, stroke=12)
+        text_run(cv, "BATINE", x, 530, skia.Font(ANTON, 190), RED, stroke=14)
+        text_run(cv, "U SLOVAČKOJ?", x, 650, skia.Font(ANTON, 92), WHITE, stroke=10)
+        u = skia.Paint(AntiAlias=True, Color=skia.Color(*RED))
+        u.setStyle(skia.Paint.kStroke_Style); u.setStrokeWidth(12); u.setStrokeCap(skia.Paint.kRound_Cap)
+        path = skia.Path(); path.moveTo(x, 690); path.quadTo(x + 230, 668, x + 470, 694)
+        cv.drawPath(path, u)
+    canvas = put(canvas, skia_layer(draw))
+    canvas = v2.paste_rgba_rot(canvas, v2.slovak_flag(190), 1590, 860, -8, border=6, shadow=0.7)
+    return finish(canvas, vignette=0.4, grain=0.018)
+
+
+def c8_giant_word():
+    canvas = bg_plate(gain=0.32, sat=0.8, blur=9)
+
+    def word(cv):
+        f = skia.Font(ANTON, 560)
+        t = "BATINE"
+        w = f.measureText(t)
+        x = 960 - w / 2
+        p = skia.Paint(AntiAlias=True)
+        p.setShader(skia.GradientShader.MakeLinear([(0, 60), (0, 560)],
+                                                    [skia.Color(240, 40, 44), skia.Color(170, 12, 20)]))
+        cv.drawString(t, x, 600, f, p)
+    wl = skia_layer(word)
+    sh = cv2.GaussianBlur(np.roll(wl[..., 3], (18, 12), (0, 1)), (0, 0), 16) * 0.7
+    canvas = over(canvas, np.zeros(3), sh)
+    canvas = put(canvas, wl)
+    p, a = people(1.65, 960, 470)
+    canvas = composite_people(canvas, p, a, outline=0, shadow=0.95)
+    canvas = canvas * (1 - 0.7 * ss(YY, 820, 1080))[..., None]
+
+    def draw(cv):
+        text_run(cv, "DOBILI", 150, 150, skia.Font(ARCHIVO, 84), WHITE, stroke=12)
+        f = skia.Font(ARCHIVO, 92)
+        t = "U SLOVAČKOJ?"
+        text_run(cv, t, 960 - f.measureText(t) / 2, 1030, f, WHITE, stroke=12)
+    canvas = put(canvas, skia_layer(draw))
+    canvas = v2.paste_rgba_rot(canvas, v2.slovak_flag(170), 1740, 105, 8, border=5, shadow=0.7)
+    canvas, _ = paste_logo(canvas, LOGO_10P, 40, 930, 190, shadow=0.6)
+    return finish(canvas)
+
+
+def c9_torn_paper():
+    canvas = bg_plate(gain=0.45, sat=1.0, blur=8)
+    canvas, _ = paste_logo(canvas, LOGO_10P, 80, 60, 700, shadow=0.4, blur=4, opacity=0.9)
+    canvas, _ = paste_logo(canvas, T_MARK, 1350, 50, 420, shadow=0.4, blur=4, opacity=0.9)
+    p, a = people(1.85, 960, 300)
+    canvas = composite_people(canvas, p, a, outline=7)
+    rng = np.random.default_rng(11)
+
+    def paper(cv):
+        cv.save(); cv.rotate(-3, 960, 860)
+        top, bot = 730, 1000
+        path = skia.Path()
+        xs = np.arange(-60, W + 80, 26)
+        path.moveTo(-60, top)
+        for x in xs:
+            path.lineTo(float(x), float(top + rng.uniform(-14, 14)))
+        for x in xs[::-1]:
+            path.lineTo(float(x), float(bot + rng.uniform(-14, 14)))
+        path.close()
+        sp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 170))
+        sp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 14))
+        cv.save(); cv.translate(8, 14); cv.drawPath(path, sp); cv.restore()
+        cv.drawPath(path, skia.Paint(AntiAlias=True, Color=skia.Color(244, 241, 232)))
+        f = skia.Font(ANTON, 150)
+        parts = [("DOBILI ", (18, 18, 22)), ("BATINE ", RED), ("U SLOVAČKOJ?", (18, 18, 22))]
+        total = sum(f.measureText(t) for t, _ in parts)
+        x = 960 - total / 2
+        for t, c in parts:
+            x += text_run(cv, t, x, 925, f, c, shadow=False)
+        cv.restore()
+    layer = skia_layer(paper)
+    # paper grain
+    noise = cv2.GaussianBlur(rng.normal(0, 1, (H, W)).astype(np.float32), (0, 0), 1.2) * 0.035
+    layer[..., :3] = np.clip(layer[..., :3] + noise[..., None] * (layer[..., :3] > 0.8), 0, 1)
+    canvas = put(canvas, layer)
+    canvas = v2.paste_rgba_rot(canvas, v2.slovak_flag(170), 1760, 690, 10, border=5, shadow=0.7)
+    return finish(canvas)
+
+
+def c10_broadcast():
+    canvas = bg_plate(gain=0.42, sat=1.0, blur=8)
+    canvas, _ = paste_logo(canvas, T_MARK, 1320, 120, 430, shadow=0.4, blur=4.5, opacity=0.9)
+    p, a = people(1.80, 960, 330)
+    canvas = composite_people(canvas, p, a, outline=0, shadow=0.9)
+    canvas = canvas * (1 - 0.5 * ss(YY, 700, 1080))[..., None]
+
+    def draw(cv):
+        # lower-third: red tab + white bar
+        tab = skia.Rect.MakeXYWH(120, 760, 560, 70)
+        cv.drawRect(tab, skia.Paint(AntiAlias=True, Color=skia.Color(*RED)))
+        f_tab = skia.Font(ARCHIVO, 40)
+        cv.drawString("10TH PLANET BELGRADE", 190, 810, f_tab, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)))
+        bar = skia.Rect.MakeXYWH(120, 830, 1680, 170)
+        sp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 160))
+        sp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 18))
+        cv.drawRect(skia.Rect.MakeXYWH(132, 846, 1680, 170), sp)
+        g = skia.Paint(AntiAlias=True)
+        g.setShader(skia.GradientShader.MakeLinear([(0, 830), (0, 1000)],
+                                                    [skia.Color(255, 255, 255), skia.Color(228, 230, 236)]))
+        cv.drawRect(bar, g)
+        cv.drawRect(skia.Rect.MakeXYWH(120, 830, 18, 170), skia.Paint(Color=skia.Color(*RED)))
+        f = skia.Font(ANTON, 128)
+        x = 330
+        for t, c in [("DOBILI ", (16, 16, 20)), ("BATINE ", RED), ("U SLOVAČKOJ?", (16, 16, 20))]:
+            x += text_run(cv, t, x, 970, f, c, shadow=False)
+    canvas = put(canvas, skia_layer(draw))
+    canvas, _ = paste_logo(canvas, LOGO_10P, 132, 776 + 70, 180, shadow=0.0)
+    canvas = v2.paste_rgba_rot(canvas, v2.slovak_flag(150), 1720, 770, 0, border=5, shadow=0.6)
+    return finish(canvas, vignette=0.3)
+
+
+CONCEPTS2 = {
+    "6_ruta_srbija_slovacka": c6_route,
+    "7_polaroid": c7_polaroid,
+    "8_ogromna_rec": c8_giant_word,
+    "9_pocepan_papir": c9_torn_paper,
+    "10_tv_prenos": c10_broadcast,
+}
+
 if __name__ == "__main__":
     os.makedirs(os.path.join(base.OUT, "concepts"), exist_ok=True)
-    for name, fn in CONCEPTS.items():
+    import sys
+    todo = CONCEPTS2 if "round2" in sys.argv else CONCEPTS
+    for name, fn in todo.items():
         img = Image.fromarray(fn())
         path = os.path.join(base.OUT, "concepts", f"koncept_{name}.jpg")
         img.save(path, quality=93, subsampling=0, optimize=True)
