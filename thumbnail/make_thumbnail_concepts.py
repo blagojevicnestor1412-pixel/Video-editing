@@ -943,9 +943,97 @@ def laurel(cv, cx, cy, size, lines):
         y += size * 0.15
 
 
+LUCKY = skia.Typeface.MakeFromFile(os.path.join(F, "LuckiestGuy_400Regular.ttf"))
+PIG = (255, 128, 178)
+PIG_DK = (232, 78, 140)
+
+
+def pig_face(cv, cx, cy, r, angle=0):
+    """simple cartoon pig sticker drawn from circles."""
+    cv.save(); cv.translate(cx, cy); cv.rotate(angle)
+    ink = skia.Paint(AntiAlias=True, Color=skia.Color(30, 14, 24))
+    sticker = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255))
+    pink = skia.Paint(AntiAlias=True, Color=skia.Color(*PIG))
+    dark = skia.Paint(AntiAlias=True, Color=skia.Color(*PIG_DK))
+    sh = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 150))
+    sh.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 12))
+
+    def ears(paint, grow):
+        for sx in (-1, 1):
+            p = skia.Path()
+            p.moveTo(sx * (r * 0.28 - grow * 0.3), -r * 0.80 - grow * 0.5)
+            p.quadTo(sx * (r * 1.30 + grow), -r * 1.18 - grow, sx * (r * 1.02 + grow * 0.6), -r * 0.30 + grow * 0.4)
+            p.quadTo(sx * r * 0.80, -r * 0.55, sx * (r * 0.28 - grow * 0.3), -r * 0.80 - grow * 0.5)
+            p.close()
+            cv.drawPath(p, paint)
+    for paint, grow in ((sh, 14), (sticker, 14), (ink, 7)):
+        if paint is sh:
+            cv.save(); cv.translate(8, 12)
+        ears(paint, grow)
+        cv.drawCircle(0, 0, r + grow, paint)
+        if paint is sh:
+            cv.restore()
+    ears(pink, 0)
+    cv.drawCircle(0, 0, r, pink)
+    for sx in (-1, 1):  # inner ears, eyes, blush
+        p = skia.Path(); p.moveTo(sx * r * 0.42, -r * 0.76); p.quadTo(sx * r * 1.08, -r * 1.00, sx * r * 0.90, -r * 0.44); p.quadTo(sx * r * 0.72, -r * 0.62, sx * r * 0.42, -r * 0.76); p.close()
+        cv.drawPath(p, dark)
+        cv.drawCircle(sx * r * 0.36, -r * 0.18, r * 0.11, ink)
+        cv.drawCircle(sx * r * 0.33, -r * 0.22, r * 0.04, sticker)
+        cv.drawOval(skia.Rect.MakeXYWH(sx * r * 0.62 - r * 0.14, r * 0.12, r * 0.28, r * 0.16),
+                    skia.Paint(AntiAlias=True, Color=skia.Color(255, 90, 140, 150)))
+    cv.drawOval(skia.Rect.MakeXYWH(-r * 0.40, r * 0.08, r * 0.80, r * 0.56), dark)
+    cv.drawOval(skia.Rect.MakeXYWH(-r * 0.40, r * 0.08, r * 0.80, r * 0.56),
+                skia.Paint(AntiAlias=True, Color=skia.Color(30, 14, 24), StrokeWidth=r * 0.05, Style=skia.Paint.kStroke_Style))
+    for sx in (-1, 1):
+        cv.drawOval(skia.Rect.MakeXYWH(sx * r * 0.16 - r * 0.07, r * 0.24, r * 0.14, r * 0.24), ink)
+    smile = skia.Path(); smile.moveTo(-r * 0.22, r * 0.78); smile.quadTo(0, r * 0.92, r * 0.22, r * 0.78)
+    cv.drawPath(smile, skia.Paint(AntiAlias=True, Color=skia.Color(30, 14, 24), StrokeWidth=r * 0.05,
+                                  Style=skia.Paint.kStroke_Style, StrokeCap=skia.Paint.kRound_Cap))
+    cv.restore()
+
+
+def bouncy_word(cv, text, cx, base, font, fill_top, fill_bot, rots, dys, ink_w, white_w, spacing=0):
+    """goofy word: every letter its own tilt and height, dark outline + white sticker edge."""
+    widths = [font.measureText(ch) for ch in text]
+    total = sum(widths) + spacing * (len(text) - 1)
+    size = font.getSize()
+    passes = [("shadow", None), ("white", white_w), ("ink", ink_w), ("fill", 0)]
+    for kind, w in passes:
+        x = cx - total / 2
+        for k, ch in enumerate(text):
+            r_, dy = rots[k % len(rots)], dys[k % len(dys)]
+            cv.save()
+            cv.translate(x + widths[k] / 2, base + dy - size * 0.35)
+            cv.rotate(r_)
+            ox, oy = -widths[k] / 2, size * 0.35
+            if kind == "shadow":
+                p = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 170))
+                p.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 14))
+                p.setStyle(skia.Paint.kStrokeAndFill_Style); p.setStrokeWidth(white_w)
+                cv.drawString(ch, ox + 10, oy + 16, font, p)
+            elif kind in ("white", "ink"):
+                c = (255, 255, 255) if kind == "white" else (28, 12, 22)
+                p = skia.Paint(AntiAlias=True, Color=skia.Color(*c))
+                p.setStyle(skia.Paint.kStrokeAndFill_Style); p.setStrokeWidth(w); p.setStrokeJoin(skia.Paint.kRound_Join)
+                cv.drawString(ch, ox, oy, font, p)
+            else:
+                p = skia.Paint(AntiAlias=True)
+                p.setShader(skia.GradientShader.MakeLinear([(0, oy - size * 0.8), (0, oy)],
+                                                           [skia.Color(*fill_top), skia.Color(*fill_bot)]))
+                cv.drawString(ch, ox, oy, font, p)
+                hp = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255, 90))
+                hp.setBlendMode(skia.BlendMode.kSrcATop)
+                cv.drawRect(skia.Rect.MakeXYWH(ox, oy - size * 0.8, widths[k], size * 0.22), hp)
+            cv.restore()
+            x += widths[k] + spacing
+    return total
+
+
 def film(bars=True, top_text=None, bottom_text="TATAMY   •   SLOVAČKA   •   BJJ VLOG", grade="teal",
          layout="center", ppl=(1.55, 960, 300), laurels=False, bar=132,
-         line1=(("DOBILI ", "white"), ("BATINE", "red")), size1=170, line2="U SLOVAČKOJ?", size2=92):
+         line1=(("DOBILI ", "white"), ("BATINE", "red")), size1=170, line2="U SLOVAČKOJ?", size2=92,
+         goofy=None):
     canvas = bg_plate(gain=0.45, sat=0.8, blur=10)
     s_, cx_, hy_ = ppl
     p, a = people(s_, cx_, hy_, "bw" if grade == "bw" else "color")
@@ -981,7 +1069,33 @@ def film(bars=True, top_text=None, bottom_text="TATAMY   •   SLOVAČKA   •  
         if top_text:
             f = skia.Font(ARCHIVO, 30)
             tracked(cv, top_text, 960 - tracked_width(top_text, f, 12) / 2, 80, f, pg, 12)
-        if layout == "center":
+        if goofy is not None:
+            f1 = skia.Font(LUCKY, goofy.get("size1", 205))
+            top, bot = goofy.get("fill", (PIG, PIG_DK))
+            w1 = bouncy_word(cv, goofy.get("word", "SVINJAC"), 930, 790, f1, top, bot,
+                             rots=[-8, 6, -5, 7, -6, 5, -4], dys=[0, -16, 8, -10, 10, -8, 4], ink_w=22, white_w=40,
+                             spacing=6)
+            f2 = skia.Font(LUCKY, goofy.get("size2", 92))
+            cv.save(); cv.rotate(-4, 960, 930)
+            bouncy_word(cv, goofy.get("line2", "U SLOVAČKOJ!"), 960, 940, f2, (255, 255, 255), (232, 232, 240),
+                        rots=[-3, 3, -2, 2], dys=[0, -6, 3, -4], ink_w=14, white_w=0, spacing=4)
+            cv.restore()
+            if goofy.get("pig", True):
+                pig_face(cv, 930 + w1 / 2 + 150, 660, 92, angle=14)
+            # little tilted tag
+            tag = goofy.get("tag", "BJJ VLOG")
+            ft = skia.Font(LUCKY, 44)
+            tw = ft.measureText(tag)
+            cv.save(); cv.rotate(4, 960, 1030)
+            rr = skia.RRect.MakeRectXY(skia.Rect.MakeXYWH(960 - tw / 2 - 26, 990, tw + 52, 70), 14, 14)
+            shp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 150)); shp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 8))
+            cv.save(); cv.translate(6, 8); cv.drawRRect(rr, shp); cv.restore()
+            cv.drawRRect(rr, skia.Paint(AntiAlias=True, Color=skia.Color(255, 214, 20)))
+            cv.drawRRect(rr, skia.Paint(AntiAlias=True, Color=skia.Color(28, 12, 22), StrokeWidth=6, Style=skia.Paint.kStroke_Style))
+            cv.drawString(tag, 960 - tw / 2, 1045, ft, skia.Paint(AntiAlias=True, Color=skia.Color(28, 12, 22)))
+            cv.restore()
+            by = None
+        elif layout == "center":
             f1 = skia.Font(ANTON, size1)
             full1 = "".join(t for t, _ in line1)
             x = 960 - tracked_width(full1, f1, 10) / 2
@@ -1010,7 +1124,7 @@ def film(bars=True, top_text=None, bottom_text="TATAMY   •   SLOVAČKA   •  
             for t, pnt in parts:
                 x = tracked(cv, t, x, 945, f1, pnt, 6) + 6
             by = H - 38
-        if bottom_text:
+        if bottom_text and by is not None:
             f3 = skia.Font(ARCHIVO, 24)
             tracked(cv, bottom_text, 960 - tracked_width(bottom_text, f3, 8) / 2, by, f3, pg, 8)
         if laurels:
@@ -1028,6 +1142,8 @@ FILM = {
     "5_zlatni_lovor": dict(grade="warm", laurels=True, ppl=(1.55, 860, 300)),
     "6_svinjac": dict(bars=False, bottom_text="BJJ VLOG", line1=(("SVINJAC", "red"),), size1=200,
                       line2="U SLOVAČKOJ!", size2=92),
+    "8_svinjac_goofy": dict(bars=False, goofy=dict()),
+    "9_svinjac_goofy_crveno": dict(bars=False, goofy=dict(fill=((255, 70, 70), (205, 20, 30)), pig=True)),
     "7_svinjac_belo": dict(bars=False, bottom_text="BJJ VLOG", line1=(("SVINJAC", "white"),), size1=200,
                            line2="U SLOVAČKOJ!", size2=92),
 }
