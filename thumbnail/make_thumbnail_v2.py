@@ -306,9 +306,9 @@ def title_f(lines, size, cx, y0, gap, rot, box_rgb, skew=-0.18, stroke=18, tf=No
             if hl:
                 l, r = x - size * 0.10, x + w + size * 0.08
                 top, bot = y - cap - size * 0.16, y + size * 0.10
-                sp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 170))
-                sp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 14))
-                cv.drawRect(skia.Rect.MakeLTRB(l + 10, top + 16, r + 10, bot + 16), sp)
+                sp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 200))
+                sp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 16))
+                cv.drawRect(skia.Rect.MakeLTRB(l + 14, top + 20, r + 14, bot + 22), sp)
                 cv.drawRect(skia.Rect.MakeLTRB(l, top, r, bot), skia.Paint(AntiAlias=True, Color=skia.Color(*box_rgb)))
             x += w
     for pass_ in ("shadow", "outline", "fill"):
@@ -316,20 +316,37 @@ def title_f(lines, size, cx, y0, gap, rot, box_rgb, skew=-0.18, stroke=18, tf=No
             for t, hl in runs:
                 w = f.measureText(t)
                 if pass_ == "shadow" and not hl:
-                    p = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 180))
-                    p.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 14))
-                    cv.drawString(t, x + 10, y + 16, f, p)
+                    p = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 215))
+                    p.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10))
+                    cv.drawString(t, x + 12, y + 18, f, p)
+                    p2 = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 120))
+                    p2.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 28))
+                    cv.drawString(t, x + 18, y + 30, f, p2)
                 elif pass_ == "outline" and not hl:
                     p = skia.Paint(AntiAlias=True, Color=skia.Color(12, 10, 20))
                     p.setStyle(skia.Paint.kStroke_Style)
                     p.setStrokeWidth(stroke)
                     p.setStrokeJoin(skia.Paint.kRound_Join)
                     cv.drawString(t, x, y, f, p)
+                elif pass_ == "outline" and hl:
+                    p = skia.Paint(AntiAlias=True, Color=skia.Color(90, 0, 0, 200))
+                    p.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 6))
+                    cv.drawString(t, x + 6, y + 8, f, p)
                 elif pass_ == "fill":
                     p = skia.Paint(AntiAlias=True)
+                    # metallic sheen: diagonal multi-stop gradient with bright glints
                     p.setShader(skia.GradientShader.MakeLinear(
-                        [(0, y - cap), (0, y)], [skia.Color(255, 255, 255), skia.Color(222, 222, 228)]))
+                        [(x, y - cap * 1.1), (x + cap * 1.6, y + cap * 0.4)],
+                        [skia.Color(255, 255, 255), skia.Color(178, 186, 202), skia.Color(255, 255, 255),
+                         skia.Color(150, 158, 175), skia.Color(250, 251, 255), skia.Color(185, 192, 206)],
+                        [0.0, 0.22, 0.40, 0.58, 0.78, 1.0], skia.TileMode.kMirror))
                     cv.drawString(t, x, y, f, p)
+                    # thin top highlight
+                    hp = skia.Paint(AntiAlias=True)
+                    hp.setShader(skia.GradientShader.MakeLinear(
+                        [(0, y - cap), (0, y - cap * 0.55)], [skia.Color(255, 255, 255, 150), skia.Color(255, 255, 255, 0)]))
+                    hp.setBlendMode(skia.BlendMode.kSrcATop)
+                    cv.drawString(t, x, y, f, hp)
                 x += w
     arr = surf.makeImageSnapshot().toarray(colorType=skia.kRGBA_8888_ColorType,
                                            alphaType=skia.kUnpremul_AlphaType).astype(np.float32) / 255
@@ -385,8 +402,7 @@ def build_g():
     """Title on top, new font, no coloured stage lights."""
     s_bg = 1.95
     bg = place(plate, s_bg, (W - base.PW * s_bg) / 2, -150 * s_bg)
-    bg = cv2.GaussianBlur(bg, (0, 0), 7)
-    canvas = np.clip(bg * 0.55 + 0.02, 0, 1)
+    canvas = background(0)
     canvas, _ = paste_logo(canvas, LOGO_10P, 70, 330, 800, shadow=0.45, blur=4.0, opacity=0.95)
     canvas, _ = paste_logo(canvas, T_MARK, 1250, 330, 430, shadow=0.45, blur=4.0, opacity=0.95)
 
@@ -412,8 +428,8 @@ def build_g():
     canvas = canvas * (1 - 0.28 * ss(d, 0.7, 1.5))[..., None]
 
     lines = [[("DOBILI ", False), ("BATINE", True)], [("U SLOVAČKOJ?", False)]]
-    t, layout, f = title_f(lines, 132, 1075, 190, 172, -2, (226, 24, 30), skew=-0.12, stroke=14, tf=TF_ARCHIVO)
-    canvas = paste_rgba_rot(canvas, slovak_flag(230), 265, 312, 8, border=7, shadow=0.7)
+    t, layout, f = title_f(lines, 132, 880, 190, 172, -2, (226, 24, 30), skew=-0.12, stroke=14, tf=TF_ARCHIVO)
+    canvas = paste_rgba_rot(canvas, slovak_flag(240), 1665, 300, -8, border=7, shadow=0.7)
     canvas = over(canvas, t[..., :3], t[..., 3])
     rng = np.random.default_rng(5)
     canvas = np.clip(canvas + rng.normal(0, 0.01, (H, W, 1)), 0, 1)
