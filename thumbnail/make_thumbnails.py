@@ -83,6 +83,21 @@ ear_m = nd.binary_fill_holes(nd.binary_closing(matte > 0.5, structure=disk(3)))
 ear_add = cv2.GaussianBlur(ear_m.astype(np.float32), (0, 0), 0.8) * box_ear
 matte = np.maximum(matte, ear_add)
 
+# 1c) left guy: white "LOKLOK" sponsor letters behind his hair / behind his left ear.
+#     Only on the outer edge band of his head: drop bright, colourless backdrop pixels.
+box_l = (xx_ >= 335) & (xx_ <= 420) & (yy_ >= 575) & (yy_ <= 640)
+core_l = nd.binary_erosion(matte > 0.5, iterations=4)
+band_l = box_l & (matte > 0.02) & ~core_l
+lum_l = photo.mean(2)
+sat_l = np.ptp(photo, axis=2)
+white_l = ss(lum_l, 0.28, 0.55) * (1 - ss(sat_l, 0.10, 0.22))
+matte = matte * (1 - white_l * band_l)
+cl = nd.binary_opening(matte > 0.5, structure=disk(1)) | ~box_l
+# small backdrop tab sticking out of the hair line above his left ear
+box_tab = (xx_ >= 396) & (xx_ <= 412) & (yy_ >= 606) & (yy_ <= 628)
+cl &= nd.binary_opening(matte > 0.5, structure=disk(3)) | ~box_tab
+matte = matte * cv2.GaussianBlur(cl.astype(np.float32), (0, 0), 0.7)
+
 # 2) right guy's hand: fingers overlap a red sign with white lettering.
 #    Colour-unmix each pixel into "skin" vs "sign" to get a clean finger matte and
 #    spill-free skin colour (same idea as a keyer's despill), then drop the sign.
