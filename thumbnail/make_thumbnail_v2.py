@@ -53,45 +53,62 @@ def light_leaks(canvas, strength=1.0):
     return 1 - (1 - canvas) * (1 - np.clip(add * strength, 0, 1))
 
 
-def text_layer(lines, size, cx, y0, gap, rot, stroke=16):
+TF_TITLE = skia.Typeface.MakeFromFile(os.path.join(base.A, "fonts", "Anton_400Regular.ttf"))
+
+
+def text_layer(lines, size, cx, y0, gap, rot, stroke=18, skew=-0.18):
+    """lines: [(runs, line_scale)], run = (text, rgb, scale, extra_bold_px)."""
     surf = skia.Surface(W, H)
     cv = surf.getCanvas()
     cv.clear(skia.ColorTRANSPARENT)
-    cv.rotate(rot, cx, y0)
-    font = skia.Font(TF, size)
+    cv.translate(cx, y0)
+    cv.rotate(rot)
+    cv.skew(skew, 0)
+    cv.translate(-cx, -y0)
     layout = []
     y = y0
     for runs, sc in lines:
-        f = skia.Font(TF, size * sc)
-        wtot = sum(f.measureText(t) for t, _ in runs)
-        layout.append((runs, f, cx - wtot / 2, y))
+        items = []
+        for t, col, rs, bold in runs:
+            f = skia.Font(TF_TITLE, size * sc * rs)
+            items.append((t, col, f, bold))
+        wtot = sum(f.measureText(t) + bold for t, _, f, bold in items)
+        layout.append((items, cx - wtot / 2, y))
         y += gap * sc
-    for runs, f, x, y in layout:  # soft shadow
-        xx = x
-        for t, col in runs:
-            p = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 170))
-            p.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 14))
-            cv.drawString(t, xx + 10, y + 16, f, p)
-            xx += f.measureText(t)
-    for runs, f, x, y in layout:  # dark outline
-        xx = x
-        for t, col in runs:
-            p = skia.Paint(AntiAlias=True, Color=skia.Color(12, 10, 20))
-            p.setStyle(skia.Paint.kStroke_Style)
-            p.setStrokeWidth(stroke * f.getSize() / size)
+
+    def each(fn):
+        for items, x, y in layout:
+            xx = x
+            for t, col, f, bold in items:
+                fn(t, col, f, bold, xx, y)
+                xx += f.measureText(t) + bold
+
+    def shadow(t, col, f, bold, x, y):
+        p = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 180))
+        p.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 14))
+        cv.drawString(t, x + 10, y + 16, f, p)
+
+    def outline(t, col, f, bold, x, y):
+        p = skia.Paint(AntiAlias=True, Color=skia.Color(12, 10, 20))
+        p.setStyle(skia.Paint.kStroke_Style)
+        p.setStrokeWidth(stroke * f.getSize() / size + bold * 2)
+        p.setStrokeJoin(skia.Paint.kRound_Join)
+        cv.drawString(t, x, y, f, p)
+
+    def fill(t, col, f, bold, x, y):
+        bot = tuple(int(c * 0.82) for c in col)
+        p = skia.Paint(AntiAlias=True)
+        p.setShader(skia.GradientShader.MakeLinear(
+            [(0, y - f.getSize() * 0.75), (0, y)], [skia.Color(*col), skia.Color(*bot)]))
+        if bold:  # extra weight: grow the glyphs with a same-colour stroke
+            p.setStyle(skia.Paint.kStrokeAndFill_Style)
+            p.setStrokeWidth(bold)
             p.setStrokeJoin(skia.Paint.kRound_Join)
-            cv.drawString(t, xx, y, f, p)
-            xx += f.measureText(t)
-    for runs, f, x, y in layout:  # fill with slight vertical gradient
-        xx = x
-        for t, col in runs:
-            top = col
-            bot = tuple(int(c * 0.82) for c in col)
-            p = skia.Paint(AntiAlias=True)
-            p.setShader(skia.GradientShader.MakeLinear(
-                [(0, y - f.getSize() * 0.75), (0, y)], [skia.Color(*top), skia.Color(*bot)]))
-            cv.drawString(t, xx, y, f, p)
-            xx += f.measureText(t)
+        cv.drawString(t, x, y, f, p)
+
+    each(shadow)
+    each(outline)
+    each(fill)
     return surf.makeImageSnapshot().toarray(colorType=skia.kRGBA_8888_ColorType,
                                             alphaType=skia.kUnpremul_AlphaType).astype(np.float32) / 255
 
@@ -155,15 +172,17 @@ VARIANTS = {
         "scale": 2.05, "cx": 960, "heads_y": 175,
         "badge_x": 560, "badge_y": 20, "badge_w": 800,
         "tat_x": 40, "tat_y": 40, "tat_w": 330,
-        "lines": [([("DOBILI ", WHITE), ("BATINE", YELLOW)], 1.0), ([("U SLOVAČKOJ?", YELLOW)], 1.12)],
-        "size": 150, "tx": 960, "ty": 785, "gap": 172, "rot": -5,
+        "lines": [([("DOBILI ", WHITE, 1.0, 0), ("BATINE", YELLOW, 1.32, 9)], 1.0),
+                  ([("U SLOVAČKOJ?", YELLOW, 1.0, 0)], 1.0)],
+        "size": 175, "tx": 960, "ty": 790, "gap": 218, "rot": -4,
     },
     "E_fazon_crveno": {
         "scale": 2.05, "cx": 960, "heads_y": 175,
         "badge_x": 560, "badge_y": 20, "badge_w": 800,
         "tat_x": 1920 - 40 - 330, "tat_y": 40, "tat_w": 330,
-        "lines": [([("DOBILI ", WHITE), ("BATINE", RED)], 1.0), ([("U SLOVAČKOJ?", WHITE)], 1.12)],
-        "size": 150, "tx": 960, "ty": 785, "gap": 172, "rot": -5,
+        "lines": [([("DOBILI ", WHITE, 1.0, 0), ("BATINE", RED, 1.32, 9)], 1.0),
+                  ([("U SLOVAČKOJ?", WHITE, 1.0, 0)], 1.0)],
+        "size": 175, "tx": 960, "ty": 790, "gap": 218, "rot": -4,
     },
 }
 
