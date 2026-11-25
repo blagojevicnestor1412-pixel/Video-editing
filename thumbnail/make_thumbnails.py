@@ -34,8 +34,14 @@ src = Image.open(os.path.join(A, "source_photo.png")).convert("RGB")
 photo = np.array(src.crop((0, 500, 1179, 2060))).astype(np.float32) / 255  # strip phone UI / black bars
 photo_src = photo.copy()          # untouched original, used for the background plate
 PH, PW = photo.shape[:2]
-V2 = os.path.exists(os.path.join(A, "people_alpha_v2.png")) and os.environ.get("CUTOUT", "v2") == "v2"
-if V2:
+CUT = os.environ.get("CUTOUT", "v3" if os.path.exists(os.path.join(A, "people_alpha_v3.png")) else "v2")
+V3 = CUT == "v3"
+V2 = CUT == "v2" and os.path.exists(os.path.join(A, "people_alpha_v2.png"))
+if V3:
+    # cut-out v3 (cutout_v3.py): per-person high-res segmentation + spill-free foreground colours
+    matte = np.array(Image.open(os.path.join(A, "people_alpha_v3.png"))).astype(np.float32) / 255
+    photo = np.array(Image.open(os.path.join(A, "people_fg_v3.png"))).astype(np.float32) / 255
+elif V2:
     # cut-out v2 (cutout_v2.py): closed-form alpha matting + spill-free foreground colours
     matte = np.array(Image.open(os.path.join(A, "people_alpha_v2.png"))).astype(np.float32) / 255
     photo = np.array(Image.open(os.path.join(A, "people_fg_v2.png"))).astype(np.float32) / 255
@@ -49,7 +55,7 @@ main = lab == (np.argmax(sizes) + 1)
 main = nd.binary_dilation(main, iterations=6)
 matte = matte * main
 # v2: drop faint matting residue from high-contrast backdrop letters, keep real soft edges
-matte = ss(matte, 0.14, 0.92) if V2 else ss(matte, 0.08, 0.92)
+matte = ss(matte, 0.14, 0.92) if V2 else ss(matte, 0.06, 0.94)
 
 # clean-up of backdrop pieces the matte caught (classic retouch, no generation)
 matte_orig = matte.copy()
@@ -60,7 +66,7 @@ disk = lambda r: (np.add.outer(np.arange(-r, r + 1) ** 2, np.arange(-r, r + 1) *
 # 1) middle guy: a bit of the blue sponsor logo shows through his hair.
 #    Rebuild a smooth hair contour and fill those pixels from the surrounding hair.
 box_head = (xx_ > 600) & (xx_ < 700) & (yy_ > 520) & (yy_ < 620)
-blue = nd.binary_dilation((B - R > 0.06) & (B > 0.25) & box_head & (not V2), iterations=2)
+blue = nd.binary_dilation((B - R > 0.06) & (B > 0.25) & box_head & (not (V2 or V3)), iterations=2)
 hair = (matte > 0.5) & ~blue
 hair_closed = nd.binary_closing(hair, structure=disk(7)) & box_head
 hair_closed = nd.binary_opening(hair_closed, structure=disk(2))
@@ -93,7 +99,7 @@ matte = np.maximum(matte, ear_add)
 
 # 1c) left guy: white "LOKLOK" sponsor letters behind his hair / behind his left ear.
 #     Only on the outer edge band of his head: drop bright, colourless backdrop pixels.
-box_l = (xx_ >= 335) & (xx_ <= 420) & (yy_ >= 575) & (yy_ <= 640)
+box_l = (xx_ >= 335) & (xx_ <= 420) & (yy_ >= 575) & (yy_ <= 640) & (not V3)
 core_l = nd.binary_erosion(matte > 0.5, iterations=4)
 band_l = box_l & (matte > 0.02) & ~core_l
 lum_l = photo.mean(2)
@@ -102,13 +108,13 @@ white_l = ss(lum_l, 0.28, 0.55) * (1 - ss(sat_l, 0.10, 0.22))
 matte = matte * (1 - white_l * band_l)
 cl = nd.binary_opening(matte > 0.5, structure=disk(1)) | ~box_l
 # small backdrop tab sticking out of the hair line above his left ear
-box_tab = (xx_ >= 396) & (xx_ <= 412) & (yy_ >= 606) & (yy_ <= 628)
+box_tab = (xx_ >= 396) & (xx_ <= 412) & (yy_ >= 606) & (yy_ <= 628) & (not V3)
 cl &= nd.binary_opening(matte > 0.5, structure=disk(3)) | ~box_tab
 matte = matte * cv2.GaussianBlur(cl.astype(np.float32), (0, 0), 0.7)
 
 # 1d) fourth guy: his right ear sits on the white/blue "GROUND GAME" letters -> soft pale edge.
 #     Tighten the matte on the ear edge, drop white/blue backdrop pixels, pull skin colour into the rim.
-box_e4 = (xx_ >= 684) & (xx_ <= 714) & (yy_ >= 568) & (yy_ <= 616)
+box_e4 = (xx_ >= 684) & (xx_ <= 714) & (yy_ >= 568) & (yy_ <= 616) & (not V3)
 core4 = nd.binary_erosion(matte > 0.5, iterations=3)
 band4 = box_e4 & (matte > 0.02) & ~core4
 lum4 = photo.mean(2)
@@ -126,29 +132,30 @@ photo = photo * (1 - rim4) + est4 * rim4
 # 2) right guy's hand: fingers overlap a red sign with white lettering.
 #    Colour-unmix each pixel into "skin" vs "sign" to get a clean finger matte and
 #    spill-free skin colour (same idea as a keyer's despill), then drop the sign.
-R, G, B = photo[..., 0], photo[..., 1], photo[..., 2]
-box_hand = (xx_ > 958) & (xx_ < 1015) & (yy_ > 800) & (yy_ < 905)
-sign_px = box_hand & (R - G > 0.45) & (G < 0.3)
-Rd = np.median(photo[sign_px], axis=0)
-skin_px = (xx_ > 975) & (xx_ < 1005) & (yy_ > 790) & (yy_ < 830) & (matte > 0.9) & (R - G > 0.05)
-Sk = np.median(photo[skin_px], axis=0)
-a_skin = np.clip((G - Rd[1]) / (Sk[1] - Rd[1]), 0, 1)
-white_text = ((B > Sk[2] + 0.18) & (np.ptp(photo, axis=2) < 0.2)) | ((B > G - 0.035) & (G > 0.45))
-a_skin[white_text] = 0
-a_skin = cv2.GaussianBlur(ss(a_skin, 0.25, 0.85).astype(np.float32), (0, 0), 0.7)
-unmixed = (photo - (1 - a_skin[..., None]) * Rd) / np.maximum(a_skin[..., None], 0.25)
-unmixed = np.clip(unmixed, 0, 1)
-# keep the natural skin hue; take only the shading from the unmixed result
-shade = np.clip(unmixed[..., 1] / max(Sk[1], 1e-3), 0.55, 1.25)
-unmixed = np.clip(Sk[None, None, :] * shade[..., None], 0, 1)
-# only where the sign actually was (near-sign zone), elsewhere untouched
-zone = cv2.GaussianBlur(nd.binary_dilation((R - G > 0.38) & box_hand | (white_text & box_hand),
-                                           iterations=3).astype(np.float32), (0, 0), 1.2)
-photo = photo * (1 - zone[..., None]) + unmixed * zone[..., None]
-matte = matte * (1 - zone) + np.minimum(matte, a_skin) * zone
-# sign lettering left of the index finger (same pink as skin after blur) - mask it out by hand
-letters = ((xx_ >= 958) & (xx_ <= 976) & (yy_ >= 846) & (yy_ <= 882)) | ((xx_ >= 980) & (xx_ <= 988) & (yy_ >= 855) & (yy_ <= 867)) | ((xx_ >= 975) & (xx_ <= 980) & (yy_ >= 863) & (yy_ <= 872))
-matte = matte * (1 - cv2.GaussianBlur(letters.astype(np.float32), (0, 0), 1.0))
+if not V3:  # v3 already separates the fingers from the sign
+    R, G, B = photo[..., 0], photo[..., 1], photo[..., 2]
+    box_hand = (xx_ > 958) & (xx_ < 1015) & (yy_ > 800) & (yy_ < 905)
+    sign_px = box_hand & (R - G > 0.45) & (G < 0.3)
+    Rd = np.median(photo[sign_px], axis=0)
+    skin_px = (xx_ > 975) & (xx_ < 1005) & (yy_ > 790) & (yy_ < 830) & (matte > 0.9) & (R - G > 0.05)
+    Sk = np.median(photo[skin_px], axis=0)
+    a_skin = np.clip((G - Rd[1]) / (Sk[1] - Rd[1]), 0, 1)
+    white_text = ((B > Sk[2] + 0.18) & (np.ptp(photo, axis=2) < 0.2)) | ((B > G - 0.035) & (G > 0.45))
+    a_skin[white_text] = 0
+    a_skin = cv2.GaussianBlur(ss(a_skin, 0.25, 0.85).astype(np.float32), (0, 0), 0.7)
+    unmixed = (photo - (1 - a_skin[..., None]) * Rd) / np.maximum(a_skin[..., None], 0.25)
+    unmixed = np.clip(unmixed, 0, 1)
+    # keep the natural skin hue; take only the shading from the unmixed result
+    shade = np.clip(unmixed[..., 1] / max(Sk[1], 1e-3), 0.55, 1.25)
+    unmixed = np.clip(Sk[None, None, :] * shade[..., None], 0, 1)
+    # only where the sign actually was (near-sign zone), elsewhere untouched
+    zone = cv2.GaussianBlur(nd.binary_dilation((R - G > 0.38) & box_hand | (white_text & box_hand),
+                                               iterations=3).astype(np.float32), (0, 0), 1.2)
+    photo = photo * (1 - zone[..., None]) + unmixed * zone[..., None]
+    matte = matte * (1 - zone) + np.minimum(matte, a_skin) * zone
+    # sign lettering left of the index finger (same pink as skin after blur) - mask it out by hand
+    letters = ((xx_ >= 958) & (xx_ <= 976) & (yy_ >= 846) & (yy_ <= 882)) | ((xx_ >= 980) & (xx_ <= 988) & (yy_ >= 855) & (yy_ <= 867)) | ((xx_ >= 975) & (xx_ <= 980) & (yy_ >= 863) & (yy_ <= 872))
+    matte = matte * (1 - cv2.GaussianBlur(letters.astype(np.float32), (0, 0), 1.0))
 
 # ------------------------------------------------------------------ background plate
 hole = nd.binary_dilation(np.maximum(matte, matte_orig) > 0.05, iterations=14).astype(np.uint8) * 255
