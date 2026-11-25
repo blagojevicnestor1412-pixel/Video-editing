@@ -337,8 +337,8 @@ def title_f(lines, size, cx, y0, gap, rot, box_rgb, skew=-0.18, stroke=18, tf=No
                     # metallic sheen: diagonal multi-stop gradient with bright glints
                     p.setShader(skia.GradientShader.MakeLinear(
                         [(x, y - cap * 1.1), (x + cap * 1.6, y + cap * 0.4)],
-                        [skia.Color(255, 255, 255), skia.Color(255, 255, 255), skia.Color(255, 255, 255),
-                         skia.Color(255, 255, 255), skia.Color(255, 255, 255), skia.Color(255, 255, 255)],
+                        [skia.Color(255, 255, 255), skia.Color(226, 232, 242), skia.Color(255, 255, 255),
+                         skia.Color(218, 224, 236), skia.Color(255, 255, 255), skia.Color(234, 238, 246)],
                         [0.0, 0.22, 0.40, 0.58, 0.78, 1.0], skia.TileMode.kMirror))
                     cv.drawString(t, x, y, f, p)
                     # thin top highlight
