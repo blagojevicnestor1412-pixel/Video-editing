@@ -904,9 +904,139 @@ CONCEPTS4 = {
     "20_film": c20_cinema,
 }
 
+
+# ====================================================================== film series (based on concept 20)
+def laurel(cv, cx, cy, size, lines):
+    """film-festival style laurel wreath (two leafy branches) with text inside."""
+    gold = skia.Color(226, 204, 150)
+    leaf = skia.Paint(AntiAlias=True, Color=gold)
+    stem = skia.Paint(AntiAlias=True, Color=gold)
+    stem.setStyle(skia.Paint.kStroke_Style); stem.setStrokeWidth(size * 0.012)
+    R = size * 0.5
+    for side in (-1, 1):
+        # angles in screen coords (y down): 90 = bottom; left branch 105 -> 245, right branch 75 -> -65
+        a0, a1 = (105, 245) if side < 0 else (75, -65)
+        rect = skia.Rect.MakeLTRB(cx - R, cy - R, cx + R, cy + R)
+        cv.drawArc(rect, a0, a1 - a0, False, stem)
+        n = 8
+        for k in range(n):
+            t = k / (n - 1)
+            th = a0 + (a1 - a0) * t
+            sz = size * (0.11 - 0.045 * t)
+            for off, tilt in ((+1, 32), (-1, -32)):
+                rr = R + off * sz * 0.55
+                x = cx + rr * np.cos(np.radians(th))
+                y = cy + rr * np.sin(np.radians(th))
+                cv.save()
+                cv.translate(float(x), float(y))
+                base_rot = th + (180 if side > 0 else 0)
+                cv.rotate(float(base_rot + side * tilt * off * -1))
+                cv.drawOval(skia.Rect.MakeXYWH(-sz * 0.28, -sz * 0.75, sz * 0.56, sz * 1.5), leaf)
+                cv.restore()
+        tip_th = np.radians(a1)
+        cv.drawCircle(float(cx + R * np.cos(tip_th)), float(cy + R * np.sin(tip_th)), size * 0.02, leaf)
+    f1 = skia.Font(ARCHIVO, size * 0.115)
+    y = cy - (len(lines) - 1) * size * 0.075 + size * 0.04
+    for t in lines:
+        w = tracked_width(t, f1, 3)
+        tracked(cv, t, cx - w / 2, y, f1, skia.Paint(AntiAlias=True, Color=skia.Color(240, 228, 196)), 3)
+        y += size * 0.15
+
+
+def film(bars=True, top_text=None, bottom_text="TATAMY   •   SLOVAČKA   •   BJJ VLOG", grade="teal",
+         layout="center", ppl=(1.55, 960, 300), laurels=False, bar=132):
+    canvas = bg_plate(gain=0.45, sat=0.8, blur=10)
+    s_, cx_, hy_ = ppl
+    p, a = people(s_, cx_, hy_, "bw" if grade == "bw" else "color")
+    canvas = composite_people(canvas, p, a, outline=0, shadow=0.85)
+    if grade == "bw":
+        l = canvas.mean(2, keepdims=True)
+        canvas = np.repeat(np.clip(0.5 + (l - 0.5) * 1.15, 0, 1), 3, 2)
+    else:
+        lum = canvas.mean(2, keepdims=True)
+        if grade == "teal":
+            canvas = canvas + (1 - lum) * np.array([-0.036, 0.024, 0.06]) + lum * np.array([0.05, 0.01, -0.04])
+        else:  # warm / golden
+            canvas = canvas + (1 - lum) * np.array([0.02, 0.0, -0.03]) + lum * np.array([0.08, 0.035, -0.06])
+        canvas = np.clip(0.5 + (canvas - 0.5) * 1.12, 0, 1)
+    if layout == "left":
+        canvas = canvas * (1 - 0.6 * (1 - ss(XX, 300, 900)))[..., None]
+        canvas = canvas * (1 - 0.35 * ss(YY, 750, 1000))[..., None]
+    elif layout == "center":
+        canvas = canvas * (1 - 0.7 * ss(YY, 620, 930))[..., None]
+    else:
+        canvas = canvas * (1 - 0.6 * ss(YY, 560, 780))[..., None]
+    if bars:
+        canvas[:bar] = 0
+        canvas[H - (bar if layout != "bar" else 300):] = 0
+
+    def draw(cv):
+        pg = skia.Paint(AntiAlias=True, Color=skia.Color(200, 200, 205))
+        white = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255))
+        red = skia.Paint(AntiAlias=True, Color=skia.Color(*RED))
+        sh = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 200))
+        sh.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 12))
+        light = skia.Paint(AntiAlias=True, Color=skia.Color(235, 235, 240))
+        if top_text:
+            f = skia.Font(ARCHIVO, 30)
+            tracked(cv, top_text, 960 - tracked_width(top_text, f, 12) / 2, 80, f, pg, 12)
+        if layout == "center":
+            f1 = skia.Font(ANTON, 170)
+            x = 960 - tracked_width("DOBILI BATINE", f1, 10) / 2
+            tracked(cv, "DOBILI BATINE", x + 6, 818, f1, sh, 10)
+            x = tracked(cv, "DOBILI ", x, 810, f1, white, 10)
+            tracked(cv, "BATINE", x, 810, f1, red, 10)
+            f2 = skia.Font(ANTON, 92)
+            t2 = "U SLOVAČKOJ?"
+            tracked(cv, t2, 960 - tracked_width(t2, f2, 26) / 2 + 4, 928, f2, sh, 26)
+            tracked(cv, t2, 960 - tracked_width(t2, f2, 26) / 2, 920, f2, light, 26)
+            by = H - 58
+        elif layout == "left":
+            x0 = 110
+            for t, f, y, pnt, tr in [("DOBILI", skia.Font(ANTON, 175), 430, white, 10),
+                                     ("BATINE", skia.Font(ANTON, 175), 625, red, 10),
+                                     ("U SLOVAČKOJ?", skia.Font(ANTON, 72), 750, light, 12)]:
+                tracked(cv, t, x0 + 6, y + 8, f, sh, tr)
+                tracked(cv, t, x0, y, f, pnt, tr)
+            cv.drawRect(skia.Rect.MakeXYWH(x0, 790, 120, 6), red)
+            by = H - 58
+        else:  # title inside a tall bottom bar
+            f1 = skia.Font(ANTON, 128)
+            parts = [("DOBILI ", white), ("BATINE ", red), ("U SLOVAČKOJ?", white)]
+            total = sum(tracked_width(t, f1, 6) + 6 for t, _ in parts)
+            x = 960 - total / 2
+            for t, pnt in parts:
+                x = tracked(cv, t, x, 945, f1, pnt, 6) + 6
+            by = H - 38
+        if bottom_text:
+            f3 = skia.Font(ARCHIVO, 24)
+            tracked(cv, bottom_text, 960 - tracked_width(bottom_text, f3, 8) / 2, by, f3, pg, 8)
+        if laurels:
+            laurel(cv, 1680, 330, 330, ["TATAMY", "SLOVAČKA"])
+    canvas = put(canvas, skia_layer(draw))
+    return finish(canvas, vignette=0.2, grain=0.025)
+
+
+FILM = {
+    "0_bez_teksta_gore": dict(),
+    "1_bez_traka": dict(bars=False),
+    "2_crno_belo": dict(grade="bw"),
+    "3_naslov_levo": dict(layout="left", ppl=(1.62, 1290, 300)),
+    "4_veci_ljudi_naslov_u_traci": dict(layout="bar", ppl=(1.95, 960, 190), bar=70),
+    "5_zlatni_lovor": dict(grade="warm", laurels=True, ppl=(1.55, 860, 300)),
+}
+
 if __name__ == "__main__":
     os.makedirs(os.path.join(base.OUT, "concepts"), exist_ok=True)
     import sys
+    if "film" in sys.argv:
+        os.makedirs(os.path.join(base.OUT, "film"), exist_ok=True)
+        for name, kw in FILM.items():
+            img = Image.fromarray(film(**kw))
+            path = os.path.join(base.OUT, "film", f"film_{name}.jpg")
+            img.save(path, quality=93, subsampling=0, optimize=True)
+            print(name, os.path.getsize(path) // 1024, "KB")
+        sys.exit(0)
     todo = CONCEPTS4 if "round4" in sys.argv else CONCEPTS3 if "round3" in sys.argv else CONCEPTS2 if "round2" in sys.argv else CONCEPTS
     for name, fn in todo.items():
         img = Image.fromarray(fn())
