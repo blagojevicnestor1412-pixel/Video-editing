@@ -98,6 +98,23 @@ box_tab = (xx_ >= 396) & (xx_ <= 412) & (yy_ >= 606) & (yy_ <= 628)
 cl &= nd.binary_opening(matte > 0.5, structure=disk(3)) | ~box_tab
 matte = matte * cv2.GaussianBlur(cl.astype(np.float32), (0, 0), 0.7)
 
+# 1d) fourth guy: his right ear sits on the white/blue "GROUND GAME" letters -> soft pale edge.
+#     Tighten the matte on the ear edge, drop white/blue backdrop pixels, pull skin colour into the rim.
+box_e4 = (xx_ >= 684) & (xx_ <= 714) & (yy_ >= 568) & (yy_ <= 616)
+core4 = nd.binary_erosion(matte > 0.5, iterations=3)
+band4 = box_e4 & (matte > 0.02) & ~core4
+lum4 = photo.mean(2)
+sat4 = np.ptp(photo, axis=2)
+bad4 = np.maximum(ss(lum4, 0.40, 0.65) * (1 - ss(sat4, 0.12, 0.24)),
+                  ss(photo[..., 2] - photo[..., 0], 0.02, 0.10))
+matte = np.where(band4, ss(matte, 0.30, 0.80) * (1 - bad4), matte)
+core_px = (core4 & box_e4).astype(np.float32)
+num4 = cv2.GaussianBlur(photo * core_px[..., None], (0, 0), 2.0)
+den4 = cv2.GaussianBlur(core_px, (0, 0), 2.0)[..., None]
+est4 = num4 / np.maximum(den4, 1e-4)
+rim4 = (band4 & (den4[..., 0] > 0.05)).astype(np.float32)[..., None]
+photo = photo * (1 - rim4) + est4 * rim4
+
 # 2) right guy's hand: fingers overlap a red sign with white lettering.
 #    Colour-unmix each pixel into "skin" vs "sign" to get a clean finger matte and
 #    spill-free skin colour (same idea as a keyer's despill), then drop the sign.
