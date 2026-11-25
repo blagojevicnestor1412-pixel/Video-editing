@@ -32,8 +32,15 @@ def ss(x, a, b):
 # ------------------------------------------------------------------ source
 src = Image.open(os.path.join(A, "source_photo.png")).convert("RGB")
 photo = np.array(src.crop((0, 500, 1179, 2060))).astype(np.float32) / 255  # strip phone UI / black bars
+photo_src = photo.copy()          # untouched original, used for the background plate
 PH, PW = photo.shape[:2]
-matte = np.array(Image.open(os.path.join(A, "people_mask_photo.png")).convert("L")).astype(np.float32) / 255
+V2 = os.path.exists(os.path.join(A, "people_alpha_v2.png")) and os.environ.get("CUTOUT", "v2") == "v2"
+if V2:
+    # cut-out v2 (cutout_v2.py): closed-form alpha matting + spill-free foreground colours
+    matte = np.array(Image.open(os.path.join(A, "people_alpha_v2.png"))).astype(np.float32) / 255
+    photo = np.array(Image.open(os.path.join(A, "people_fg_v2.png"))).astype(np.float32) / 255
+else:
+    matte = np.array(Image.open(os.path.join(A, "people_mask_photo.png")).convert("L")).astype(np.float32) / 255
 
 # keep only the big connected people blob (drops stray bits of backdrop)
 lab, n = nd.label(matte > 0.5)
@@ -41,7 +48,8 @@ sizes = nd.sum(np.ones_like(matte), lab, range(1, n + 1))
 main = lab == (np.argmax(sizes) + 1)
 main = nd.binary_dilation(main, iterations=6)
 matte = matte * main
-matte = ss(matte, 0.08, 0.92)
+# v2: drop faint matting residue from high-contrast backdrop letters, keep real soft edges
+matte = ss(matte, 0.14, 0.92) if V2 else ss(matte, 0.08, 0.92)
 
 # clean-up of backdrop pieces the matte caught (classic retouch, no generation)
 matte_orig = matte.copy()
@@ -52,7 +60,7 @@ disk = lambda r: (np.add.outer(np.arange(-r, r + 1) ** 2, np.arange(-r, r + 1) *
 # 1) middle guy: a bit of the blue sponsor logo shows through his hair.
 #    Rebuild a smooth hair contour and fill those pixels from the surrounding hair.
 box_head = (xx_ > 600) & (xx_ < 700) & (yy_ > 520) & (yy_ < 620)
-blue = nd.binary_dilation((B - R > 0.06) & (B > 0.25) & box_head, iterations=2)
+blue = nd.binary_dilation((B - R > 0.06) & (B > 0.25) & box_head & (not V2), iterations=2)
 hair = (matte > 0.5) & ~blue
 hair_closed = nd.binary_closing(hair, structure=disk(7)) & box_head
 hair_closed = nd.binary_opening(hair_closed, structure=disk(2))
@@ -144,13 +152,13 @@ matte = matte * (1 - cv2.GaussianBlur(letters.astype(np.float32), (0, 0), 1.0))
 
 # ------------------------------------------------------------------ background plate
 hole = nd.binary_dilation(np.maximum(matte, matte_orig) > 0.05, iterations=14).astype(np.uint8) * 255
-bg8 = (photo * 255).astype(np.uint8)
+bg8 = (photo_src * 255).astype(np.uint8)
 small = cv2.resize(bg8, (PW // 2, PH // 2), interpolation=cv2.INTER_AREA)
 small_hole = cv2.resize(hole, (PW // 2, PH // 2), interpolation=cv2.INTER_NEAREST)
 plate_small = cv2.inpaint(small, small_hole, 12, cv2.INPAINT_TELEA)
 plate = cv2.resize(plate_small, (PW, PH), interpolation=cv2.INTER_CUBIC).astype(np.float32) / 255
 hm = cv2.GaussianBlur(hole.astype(np.float32) / 255, (0, 0), 6)[..., None]
-plate = photo * (1 - hm) + plate * hm
+plate = photo_src * (1 - hm) + plate * hm
 
 
 def place(img, scale, ox, oy, interp=cv2.INTER_LANCZOS4):
