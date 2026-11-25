@@ -658,10 +658,256 @@ CONCEPTS3 = {
     "15_kamera_rec": c15_camcorder,
 }
 
+
+# ====================================================================== round 4
+def head_pos(scale, cx, heads_y, photo_xy=(628, 590)):
+    """thumbnail position of a photo point (default: middle guy's face)."""
+    return cx + (photo_xy[0] - PEOPLE_ANCHOR[0]) * scale, heads_y + (photo_xy[1] - PEOPLE_ANCHOR[1]) * scale
+
+
+def decontaminate(p, a, sigma=3.0):
+    """push interior colours outwards over the matte edge (removes dark backdrop fringe)."""
+    core = (a > 0.97).astype(np.float32)
+    num = cv2.GaussianBlur(p * core[..., None], (0, 0), sigma)
+    den = cv2.GaussianBlur(core, (0, 0), sigma)[..., None]
+    est = num / np.maximum(den, 1e-4)
+    edge = ((a > 0.01) & (a < 0.97)).astype(np.float32)[..., None] * (den > 0.02)
+    return p * (1 - edge) + est * edge
+
+
+def tracked(cv, txt, x, y, font, paint, tracking):
+    for ch in txt:
+        cv.drawString(ch, x, y, font, paint)
+        x += font.measureText(ch) + tracking
+    return x
+
+
+def tracked_width(txt, font, tracking):
+    return sum(font.measureText(ch) for ch in txt) + tracking * (len(txt) - 1)
+
+
+def c16_light_mode():
+    d = np.sqrt(((XX - 960) / 1100) ** 2 + ((YY - 520) / 800) ** 2)
+    canvas = (0.97 - 0.14 * ss(d, 0.2, 1.3))[..., None] * np.array([1.0, 0.99, 0.97])
+    canvas = np.repeat(canvas, 1, 2) if canvas.shape[2] == 3 else canvas
+    p, a = people(1.75, 960, 470)
+    p = decontaminate(p, a)
+    a = ss(a, 0.25, 0.95)
+    sh = cv2.GaussianBlur(np.roll(a, (22, 0), (0, 1)), (0, 0), 28) * 0.35
+    canvas = over(canvas, np.zeros(3), sh)
+    canvas = over(canvas, p, a)
+    ink = (18, 18, 22)
+
+    def draw(cv):
+        f = skia.Font(ANTON, 185)
+        parts = [("DOBILI ", ink), ("BATINE", RED)]
+        x = 960 - sum(f.measureText(t) for t, _ in parts) / 2
+        for t, c in parts:
+            x += text_run(cv, t, x, 215, f, c, shadow=False)
+        f2 = skia.Font(ANTON, 150)
+        t = "U SLOVAČKOJ?"
+        text_run(cv, t, 960 - f2.measureText(t) / 2, 405, f2, ink, shadow=False)
+    canvas = put(canvas, skia_layer(draw))
+    return finish(canvas, vignette=0.08, grain=0.008)
+
+
+def bandaid(cv, cx, cy, angle, length=300, width=86):
+    cv.save()
+    cv.translate(cx, cy)
+    cv.rotate(angle)
+    sp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 120))
+    sp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 8))
+    r = skia.RRect.MakeRectXY(skia.Rect.MakeXYWH(-length / 2, -width / 2, length, width), width / 2, width / 2)
+    cv.save(); cv.translate(5, 8); cv.drawRRect(r, sp); cv.restore()
+    g = skia.Paint(AntiAlias=True)
+    g.setShader(skia.GradientShader.MakeLinear([(0, -width / 2), (0, width / 2)],
+                                               [skia.Color(240, 204, 168), skia.Color(214, 170, 130)]))
+    cv.drawRRect(r, g)
+    pad = skia.RRect.MakeRectXY(skia.Rect.MakeXYWH(-length * 0.17, -width * 0.36, length * 0.34, width * 0.72), 8, 8)
+    cv.drawRRect(pad, skia.Paint(AntiAlias=True, Color=skia.Color(236, 222, 206)))
+    dots = skia.Paint(AntiAlias=True, Color=skia.Color(190, 148, 110))
+    for sx in (-1, 1):
+        for i in range(3):
+            for j in range(2):
+                cv.drawCircle(sx * (length * 0.27 + i * 16), -12 + j * 24, 3.2, dots)
+    cv.restore()
+
+
+def c17_bandaid():
+    canvas = bg_plate(gain=0.32, sat=0.8, blur=9)
+    p, a = people(1.82, 960, 460)
+    canvas = composite_people(canvas, p, a, outline=6)
+    canvas = canvas * (1 - 0.45 * (1 - ss(YY, 0, 450)))[..., None]
+
+    def draw(cv):
+        f = skia.Font(ANTON, 185)
+        parts = [("DOBILI ", None), ("BATINE", RED)]
+        total = sum(f.measureText(t) for t, _ in parts) + 20
+        x = 960 - total / 2
+        box_x = None
+        for t, box in parts:
+            if box:
+                box_x = (x + 20, x + 20 + f.measureText(t))
+                text_run(cv, t, x + 20, 225, f, WHITE, box=box)
+            else:
+                x += text_run(cv, t, x, 225, f, WHITE, stroke=16)
+        f2 = skia.Font(ANTON, 150)
+        t = "U SLOVAČKOJ?"
+        text_run(cv, t, 960 - f2.measureText(t) / 2, 415, f2, WHITE, stroke=14)
+        # band-aids stuck on the red box
+        bandaid(cv, box_x[1] + 62, 80, 36, 200, 62)
+        bandaid(cv, box_x[1] + 62, 80, -36, 200, 62)
+        bandaid(cv, box_x[0] - 10, 250, -14, 210, 64)
+    canvas = put(canvas, skia_layer(draw))
+    return finish(canvas)
+
+
+def c18_focus():
+    s_, cx_, hy_ = 1.95, 1120, 330
+    canvas = bg_plate(gain=0.35, sat=0.8, blur=12)
+    p, a = people(s_, cx_, hy_)
+    full = composite_people(canvas, p, a, outline=0, shadow=0.85)
+    hx, hy = head_pos(s_, cx_, hy_, (621, 641))
+    focus = np.exp(-(((XX - hx) / 300) ** 2 + ((YY - hy - 130) / 560) ** 2))
+    focus = np.clip(focus * 1.6, 0, 1)[..., None]
+    blurred = cv2.GaussianBlur(full, (0, 0), 7)
+    lum = blurred.mean(2, keepdims=True)
+    blurred = (lum + (blurred - lum) * 0.4) * 0.55
+    canvas = full * focus + blurred * (1 - focus)
+    canvas = canvas * (1 - 0.45 * (1 - ss(XX, 250, 800)))[..., None]
+
+    def draw(cv):
+        x = 70
+        text_run(cv, "DOBILI", x, 300, skia.Font(ANTON, 160), WHITE, stroke=14)
+        text_run(cv, "BATINE?", x, 520, skia.Font(ANTON, 205), WHITE, box=RED)
+        text_run(cv, "U SLOVAČKOJ", x, 650, skia.Font(ANTON, 110), WHITE, stroke=12)
+        # hand-drawn circle around his face + arrow
+        rp = skia.Paint(AntiAlias=True, Color=skia.Color(*RED))
+        rp.setStyle(skia.Paint.kStroke_Style); rp.setStrokeWidth(11); rp.setStrokeCap(skia.Paint.kRound_Cap)
+        for k, (dx, dy, rx, ry) in enumerate([(0, 0, 135, 165), (6, -4, 128, 160)]):
+            path = skia.Path()
+            n = 60
+            for j in range(n + 8):
+                t_ = j / n * 2 * np.pi
+                px = hx + dx + rx * np.cos(t_) * (1 + 0.03 * np.sin(3 * t_ + k))
+                py = hy - 10 + dy + ry * np.sin(t_)
+                (path.moveTo if j == 0 else path.lineTo)(float(px), float(py))
+            rp.setAlphaf(1.0 if k == 0 else 0.6)
+            cv.drawPath(path, rp)
+        rp.setAlphaf(1.0)
+        arrow = skia.Path()
+        ax0, ay0 = 560, 700
+        ax1, ay1 = hx - 150, hy + 60
+        arrow.moveTo(ax0, ay0)
+        arrow.quadTo(ax0 + 150, ay1 + 140, ax1, ay1)
+        cv.drawPath(arrow, rp)
+        ang = np.arctan2(ay1 - (ay1 + 140), ax1 - (ax0 + 150))
+        for da in (2.6, -2.6):
+            cv.drawLine(ax1, ay1, float(ax1 + 45 * np.cos(ang + da)), float(ay1 + 45 * np.sin(ang + da)), rp)
+    canvas = put(canvas, skia_layer(draw))
+    return finish(canvas)
+
+
+def c19_comic():
+    cx0, cy0 = 980, 560
+    ang = np.arctan2(YY - cy0, XX - cx0)
+    rays = (np.floor((ang + np.pi) / (2 * np.pi) * 28) % 2)[..., None]
+    canvas = rays * np.array([1.0, 0.84, 0.05]) + (1 - rays) * np.array([1.0, 0.62, 0.02])
+
+    def dots(cv):
+        p = skia.Paint(AntiAlias=True, Color=skia.Color(220, 70, 0, 120))
+        for y in range(0, H + 24, 24):
+            for x in range(0, W + 24, 24):
+                d = np.hypot(x - cx0, y - cy0) / 1100
+                r = 1.0 + 6.5 * min(1, d)
+                cv.drawCircle(x + (12 if (y // 24) % 2 else 0), y, r, p)
+    canvas = put(canvas, skia_layer(dots))
+    s_, cx_, hy_ = 1.75, 1000, 480
+    p, a = people(s_, cx_, hy_)
+    lum = p.mean(2, keepdims=True)
+    p = np.clip(lum + (p - lum) * 1.25, 0, 1)
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13))
+    blk = cv2.GaussianBlur(cv2.dilate((a > 0.5).astype(np.uint8), k).astype(np.float32), (0, 0), 0.8)
+    canvas = over(canvas, np.zeros(3), cv2.GaussianBlur(np.roll(blk, (16, 12), (0, 1)), (0, 0), 3) * 0.6)
+    canvas = over(canvas, np.array([0.04, 0.04, 0.05]), blk)
+    canvas = over(canvas, p, a)
+    hx, hy = head_pos(s_, cx_, hy_, (628, 560))
+
+    def bubble(cv):
+        rect = skia.Rect.MakeXYWH(150, 40, 1250, 380)
+        tail = skia.Path()
+        tail.moveTo(820, 380); tail.lineTo(float(hx - 10), float(hy - 60)); tail.lineTo(960, 360); tail.close()
+        oval = skia.Path(); oval.addOval(rect)
+        shape = skia.Op(oval, tail, skia.PathOp.kUnion_PathOp)
+        sp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 150))
+        cv.save(); cv.translate(14, 18); cv.drawPath(shape, sp); cv.restore()
+        cv.drawPath(shape, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)))
+        bp = skia.Paint(AntiAlias=True, Color=skia.Color(10, 10, 12))
+        bp.setStyle(skia.Paint.kStroke_Style); bp.setStrokeWidth(10); bp.setStrokeJoin(skia.Paint.kRound_Join)
+        cv.drawPath(shape, bp)
+        f = skia.Font(ANTON, 120)
+        ink = (14, 14, 18)
+        parts = [("DOBILI ", ink), ("BATINE", RED)]
+        x = 775 - sum(f.measureText(t) for t, _ in parts) / 2
+        for t, c in parts:
+            x += text_run(cv, t, x, 215, f, c, shadow=False)
+        f2 = skia.Font(ANTON, 100)
+        t = "U SLOVAČKOJ?!"
+        text_run(cv, t, 775 - f2.measureText(t) / 2, 335, f2, ink, shadow=False)
+    canvas = put(canvas, skia_layer(bubble))
+    return finish(canvas, vignette=0.15, grain=0.006)
+
+
+def c20_cinema():
+    canvas = bg_plate(gain=0.45, sat=0.8, blur=10)
+    p, a = people(1.55, 960, 300)
+    canvas = composite_people(canvas, p, a, outline=0, shadow=0.85)
+    # teal & orange grade
+    lum = canvas.mean(2, keepdims=True)
+    canvas = canvas + (1 - lum) * np.array([-0.03, 0.02, 0.05]) * 1.2 + lum * np.array([0.05, 0.01, -0.04])
+    canvas = np.clip(0.5 + (canvas - 0.5) * 1.12, 0, 1)
+    canvas = canvas * (1 - 0.7 * ss(YY, 620, 930))[..., None]
+    bar = 132
+    canvas[:bar] = 0
+    canvas[H - bar:] = 0
+
+    def draw(cv):
+        f = skia.Font(ARCHIVO, 30)
+        pg = skia.Paint(AntiAlias=True, Color=skia.Color(200, 200, 205))
+        t = "10TH PLANET BELGRADE PREDSTAVLJA"
+        tracked(cv, t, 960 - tracked_width(t, f, 12) / 2, 80, f, pg, 12)
+        f1 = skia.Font(ANTON, 170)
+        w1 = tracked_width("DOBILI BATINE", f1, 10)
+        x = 960 - w1 / 2
+        sh = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 200))
+        sh.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 12))
+        tracked(cv, "DOBILI BATINE", x + 6, 818, f1, sh, 10)
+        x = tracked(cv, "DOBILI ", x, 810, f1, skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)), 10)
+        tracked(cv, "BATINE", x, 810, f1, skia.Paint(AntiAlias=True, Color=skia.Color(*RED)), 10)
+        f2 = skia.Font(ANTON, 92)
+        t2 = "U SLOVAČKOJ?"
+        tracked(cv, t2, 960 - tracked_width(t2, f2, 26) / 2 + 4, 928, f2, sh, 26)
+        tracked(cv, t2, 960 - tracked_width(t2, f2, 26) / 2, 920, f2,
+                skia.Paint(AntiAlias=True, Color=skia.Color(235, 235, 240)), 26)
+        f3 = skia.Font(ARCHIVO, 24)
+        t3 = "TATAMY   •   SLOVAČKA   •   BJJ VLOG"
+        tracked(cv, t3, 960 - tracked_width(t3, f3, 8) / 2, H - 58, f3, pg, 8)
+    canvas = put(canvas, skia_layer(draw))
+    return finish(canvas, vignette=0.2, grain=0.025)
+
+
+CONCEPTS4 = {
+    "16_svetla_pozadina": c16_light_mode,
+    "17_flasteri": c17_bandaid,
+    "18_fokus_i_krug": c18_focus,
+    "19_strip": c19_comic,
+    "20_film": c20_cinema,
+}
+
 if __name__ == "__main__":
     os.makedirs(os.path.join(base.OUT, "concepts"), exist_ok=True)
     import sys
-    todo = CONCEPTS3 if "round3" in sys.argv else CONCEPTS2 if "round2" in sys.argv else CONCEPTS
+    todo = CONCEPTS4 if "round4" in sys.argv else CONCEPTS3 if "round3" in sys.argv else CONCEPTS2 if "round2" in sys.argv else CONCEPTS
     for name, fn in todo.items():
         img = Image.fromarray(fn())
         path = os.path.join(base.OUT, "concepts", f"koncept_{name}.jpg")
