@@ -64,6 +64,19 @@ bh = cv2.GaussianBlur(box_head.astype(np.float32), (0, 0), 3)
 blue_zone = cv2.GaussianBlur(nd.binary_dilation(blue, iterations=10).astype(np.float32), (0, 0), 3)
 matte = matte * (1 - blue_zone * bh) + head_m * blue_zone * bh
 
+# 1b) second guy: orange "4FITNESS" sponsor logo shows through under his right ear.
+#     Drop only clearly-orange backdrop pixels, and neutralise the orange cast on the ear lobe.
+box_ear = (xx_ >= 466) & (xx_ <= 488) & (yy_ >= 594) & (yy_ <= 624)
+br = photo[..., 2] / np.maximum(photo[..., 0], 1e-3)
+logo_px = box_ear & (br < 0.33)
+matte = matte * (1 - cv2.GaussianBlur(logo_px.astype(np.float32), (0, 0), 0.8))
+skin_ref = np.array([0.87, 0.60, 0.49])
+lum = photo.mean(2, keepdims=True)
+skin_tone = np.clip(skin_ref * lum / skin_ref.mean(), 0, 1)
+cast = (box_ear & (br < 0.52) & ~logo_px).astype(np.float32)
+cast = cv2.GaussianBlur(cast, (0, 0), 1.0)[..., None]
+photo = photo * (1 - cast) + skin_tone * cast
+
 # 2) right guy's hand: fingers overlap a red sign with white lettering.
 #    Colour-unmix each pixel into "skin" vs "sign" to get a clean finger matte and
 #    spill-free skin colour (same idea as a keyer's despill), then drop the sign.
