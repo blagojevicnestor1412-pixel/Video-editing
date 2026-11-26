@@ -1148,9 +1148,281 @@ FILM = {
                            line2="U SLOVAČKOJ!", size2=92),
 }
 
+
+# ====================================================================== goofy "SVINJAC" series
+GP = dict(scale=1.55, cx=960, hy=300)
+HEADS = [(377, 612), (505, 567), (617, 590), (727, 557), (868, 548)]
+
+
+def head_xy(k, ppl=None, up=0):
+    p = ppl or GP
+    hx, hy = HEADS[k]
+    return p["cx"] + (hx - 636) * p["scale"], p["hy"] + (hy - 528) * p["scale"] - up
+
+
+def star_path(cx, cy, r_out, r_in, n=5, rot=-90):
+    p = skia.Path()
+    for k in range(2 * n + 1):
+        r = r_out if k % 2 == 0 else r_in
+        a = np.radians(rot + k * 180 / n)
+        (p.moveTo if k == 0 else p.lineTo)(float(cx + r * np.cos(a)), float(cy + r * np.sin(a)))
+    p.close()
+    return p
+
+
+INK = skia.Color(28, 12, 22)
+
+
+def outlined(cv, path, fill, ink_w=8, white_w=0, shadow=True):
+    if shadow:
+        sp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 140)); sp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 8))
+        cv.save(); cv.translate(6, 9); cv.drawPath(path, sp); cv.restore()
+    for c, w in ((skia.Color(255, 255, 255), white_w), (INK, ink_w)):
+        if w:
+            p = skia.Paint(AntiAlias=True, Color=c, Style=skia.Paint.kStroke_Style, StrokeWidth=w, StrokeJoin=skia.Paint.kRound_Join)
+            cv.drawPath(path, p)
+    cv.drawPath(path, skia.Paint(AntiAlias=True, Color=skia.Color(*fill)))
+
+
+def dizzy_stars(cv, cx, cy, rx=95, ry=26, n=4, phase=0.3):
+    orbit = skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255, 200), Style=skia.Paint.kStroke_Style, StrokeWidth=4)
+    orbit.setPathEffect(skia.DashPathEffect.Make([16, 12], 0))
+    cv.drawOval(skia.Rect.MakeXYWH(cx - rx, cy - ry, 2 * rx, 2 * ry), orbit)
+    for k in range(n):
+        a = phase + k * 2 * np.pi / n
+        x, y = cx + rx * np.cos(a), cy + ry * np.sin(a)
+        outlined(cv, star_path(x, y, 24, 10, rot=-90 + k * 17), (255, 214, 20), ink_w=6)
+
+
+def sweat(cv, x, y, s=1.0, ang=0):
+    cv.save(); cv.translate(x, y); cv.rotate(ang); cv.scale(s, s)
+    p = skia.Path(); p.moveTo(0, -34); p.cubicTo(14, -10, 22, 6, 0, 22); p.cubicTo(-22, 6, -14, -10, 0, -34); p.close()
+    outlined(cv, p, (140, 210, 255), ink_w=6, shadow=False)
+    cv.drawOval(skia.Rect.MakeXYWH(-8, -6, 7, 12), skia.Paint(AntiAlias=True, Color=skia.Color(255, 255, 255)))
+    cv.restore()
+
+
+def mud_splat(cv, cx, cy, r, seed):
+    rng = np.random.default_rng(seed)
+    p = skia.Path()
+    p.addCircle(cx, cy, r)
+    for k in range(9):
+        a = rng.uniform(0, 2 * np.pi); d = r * rng.uniform(0.7, 1.5); rr = r * rng.uniform(0.18, 0.42)
+        p.addCircle(float(cx + d * np.cos(a)), float(cy + d * np.sin(a)), float(rr))
+        dd = d + rr * 2.2
+        p.addCircle(float(cx + dd * np.cos(a)), float(cy + dd * np.sin(a)), float(rr * 0.45))
+    p.setFillType(skia.PathFillType.kWinding)
+    outlined(cv, p, (112, 72, 40), ink_w=6)
+    cv.drawCircle(cx - r * 0.3, cy - r * 0.3, r * 0.22, skia.Paint(AntiAlias=True, Color=skia.Color(150, 104, 66)))
+
+
+def drips(cv, xs, y, seed):
+    rng = np.random.default_rng(seed)
+    for x in xs:
+        L = rng.uniform(70, 125); w = rng.uniform(16, 24)
+        p = skia.Path(); p.addRRect(skia.RRect.MakeRectXY(skia.Rect.MakeXYWH(x - w / 2, y - 10, w, L), w / 2, w / 2))
+        p.addCircle(float(x), float(y + L - 4), float(w * 0.62))
+        outlined(cv, p, (112, 72, 40), ink_w=5, shadow=False)
+
+
+def starburst(cv, cx, cy, rx, ry, n=18, fill=(255, 214, 20)):
+    p = skia.Path()
+    for k in range(2 * n + 1):
+        a = k * np.pi / n
+        f = 1.0 if k % 2 == 0 else 0.78
+        (p.moveTo if k == 0 else p.lineTo)(float(cx + rx * f * np.cos(a)), float(cy + ry * f * np.sin(a)))
+    p.close()
+    outlined(cv, p, fill, ink_w=10, white_w=24)
+
+
+def crown(cv, cx, cy, w=150):
+    h = w * 0.6
+    p = skia.Path()
+    p.moveTo(cx - w / 2, cy); p.lineTo(cx - w / 2, cy - h * 0.55); p.lineTo(cx - w / 4, cy - h * 0.2)
+    p.lineTo(cx, cy - h); p.lineTo(cx + w / 4, cy - h * 0.2); p.lineTo(cx + w / 2, cy - h * 0.55); p.lineTo(cx + w / 2, cy); p.close()
+    outlined(cv, p, (255, 206, 30), ink_w=8, white_w=18)
+    for k, x in enumerate([cx - w / 2, cx, cx + w / 2]):
+        cv.drawCircle(x, cy - (h if k == 1 else h * 0.55), 11, skia.Paint(AntiAlias=True, Color=skia.Color(255, 90, 140)))
+
+
+def doodle_arrow(cv, x0, y0, x1, y1, bend=80):
+    p = skia.Path(); mx, my = (x0 + x1) / 2, (y0 + y1) / 2 - bend
+    p.moveTo(x0, y0); p.quadTo(mx, my, x1, y1)
+    for c, w in ((INK, 16), (skia.Color(255, 255, 255), 8)):
+        cv.drawPath(p, skia.Paint(AntiAlias=True, Color=c, Style=skia.Paint.kStroke_Style, StrokeWidth=w, StrokeCap=skia.Paint.kRound_Cap))
+    ang = np.arctan2(y1 - my, x1 - mx)
+    for c, w in ((INK, 16), (skia.Color(255, 255, 255), 8)):
+        for da in (2.5, -2.5):
+            cv.drawLine(x1, y1, float(x1 + 42 * np.cos(ang + da)), float(y1 + 42 * np.sin(ang + da)),
+                        skia.Paint(AntiAlias=True, Color=c, StrokeWidth=w, StrokeCap=skia.Paint.kRound_Cap))
+
+
+def sparkle(cv, x, y, r=26):
+    outlined(cv, star_path(x, y, r, r * 0.28, n=4, rot=0), (255, 255, 255), ink_w=5, shadow=False)
+
+
+def bubble(cv, cx, cy, w, h, tail_to, text, size=110):
+    rect = skia.Rect.MakeXYWH(cx - w / 2, cy - h / 2, w, h)
+    oval = skia.Path(); oval.addOval(rect)
+    tail = skia.Path(); tail.moveTo(cx - w * 0.12, cy + h * 0.3); tail.lineTo(*tail_to); tail.lineTo(cx + w * 0.10, cy + h * 0.36); tail.close()
+    shape = skia.Op(oval, tail, skia.PathOp.kUnion_PathOp)
+    outlined(cv, shape, (255, 255, 255), ink_w=10)
+    f = skia.Font(LUCKY, size)
+    tw = f.measureText(text)
+    cv.drawString(text, cx - tw / 2, cy + size * 0.36, f, skia.Paint(AntiAlias=True, Color=skia.Color(*PIG_DK)))
+
+
+def goofy(ppl=None, bg_tint=None, word_fill=(PIG, PIG_DK), word_at=(930, 790), word_size=205,
+          line2_at=(960, 940), line2="U SLOVAČKOJ!", pigs=((None,),), tag_at=(960, 990), tag_rot=4,
+          back=None, front=None, behind_people=None, darken=(620, 930)):
+    ppl = ppl or GP
+    canvas = bg_plate(gain=0.45, sat=0.8, blur=10)
+    if bg_tint is not None:
+        l = canvas.mean(2, keepdims=True)
+        canvas = np.clip(l * np.array(bg_tint) * 1.6, 0, 1)
+    if behind_people:
+        canvas = put(canvas, skia_layer(behind_people))
+    p, a = people(ppl["scale"], ppl["cx"], ppl["hy"])
+    canvas = composite_people(canvas, p, a, outline=0, shadow=0.85)
+    lum = canvas.mean(2, keepdims=True)
+    canvas = canvas + (1 - lum) * np.array([-0.036, 0.024, 0.06]) + lum * np.array([0.05, 0.01, -0.04])
+    canvas = np.clip(0.5 + (canvas - 0.5) * 1.12, 0, 1)
+    if darken:
+        if darken[0] < darken[1]:
+            canvas = canvas * (1 - 0.65 * ss(YY, *darken))[..., None]
+        else:
+            canvas = canvas * (1 - 0.55 * (1 - ss(YY, darken[1], darken[0])))[..., None]
+
+    def draw(cv):
+        if back:
+            back(cv)
+        f1 = skia.Font(LUCKY, word_size)
+        w1 = bouncy_word(cv, "SVINJAC", word_at[0], word_at[1], f1, word_fill[0], word_fill[1],
+                         rots=[-8, 6, -5, 7, -6, 5, -4], dys=[0, -16, 8, -10, 10, -8, 4], ink_w=22, white_w=40, spacing=6)
+        if line2:
+            f2 = skia.Font(LUCKY, 92)
+            cv.save(); cv.rotate(-4, line2_at[0], line2_at[1])
+            bouncy_word(cv, line2, line2_at[0], line2_at[1], f2, (255, 255, 255), (232, 232, 240),
+                        rots=[-3, 3, -2, 2], dys=[0, -6, 3, -4], ink_w=14, white_w=0, spacing=4)
+            cv.restore()
+        for pg in pigs:
+            if pg == (None,):
+                pig_face(cv, word_at[0] + w1 / 2 + 150, word_at[1] - 130, 92, angle=14)
+            elif pg:
+                pig_face(cv, *pg)
+        if tag_at:
+            ft = skia.Font(LUCKY, 44)
+            tag = "BJJ VLOG"
+            tw = ft.measureText(tag)
+            tx, ty = tag_at
+            cv.save(); cv.rotate(tag_rot, tx, ty + 40)
+            rr = skia.RRect.MakeRectXY(skia.Rect.MakeXYWH(tx - tw / 2 - 26, ty, tw + 52, 70), 14, 14)
+            shp = skia.Paint(AntiAlias=True, Color=skia.Color(0, 0, 0, 150)); shp.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 8))
+            cv.save(); cv.translate(6, 8); cv.drawRRect(rr, shp); cv.restore()
+            cv.drawRRect(rr, skia.Paint(AntiAlias=True, Color=skia.Color(255, 214, 20)))
+            cv.drawRRect(rr, skia.Paint(AntiAlias=True, Color=INK, StrokeWidth=6, Style=skia.Paint.kStroke_Style))
+            cv.drawString(tag, tx - tw / 2, ty + 55, ft, skia.Paint(AntiAlias=True, Color=INK))
+            cv.restore()
+        if front:
+            front(cv)
+    canvas = put(canvas, skia_layer(draw))
+    return finish(canvas, vignette=0.2, grain=0.02)
+
+
+def _g1():  # pig on the left, tag in the corner
+    return goofy(pigs=((620 - 330, 640, 100, -14),), word_at=(1010, 790), line2_at=(1030, 940), tag_at=(1700, 70), tag_rot=-6)
+
+
+def _g2():  # giant pig in the backdrop
+    def big_pig(cv):
+        cv.saveLayer(None, skia.Paint(Alphaf=0.55))
+        pig_face(cv, 960, 330, 300, angle=-6)
+        cv.restore()
+    return goofy(behind_people=big_pig, pigs=())
+
+
+def _g3():  # dizzy stars over heads + sweat
+    def fr(cv):
+        for k, ph in ((0, 0.2), (2, 1.1), (4, 2.0)):
+            x, y = head_xy(k, up=95)
+            dizzy_stars(cv, x, y, phase=ph)
+        x, y = head_xy(1); sweat(cv, x + 70, y - 40, 0.9, 15)
+        x, y = head_xy(3); sweat(cv, x - 72, y - 30, 0.9, -15)
+    return goofy(front=fr)
+
+
+def _g4():  # mud splats + drips
+    def bk(cv):
+        for (x, y, r, sd) in ((330, 700, 60, 1), (1600, 900, 70, 2), (1490, 660, 40, 3), (420, 960, 45, 4)):
+            mud_splat(cv, x, y, r, sd)
+        drips(cv, [655, 770, 930, 1085, 1215], 770, 7)   # behind the word -> mud drips out of the letters
+    return goofy(back=bk, line2_at=(960, 965), tag_at=(960, 1000))
+
+
+def _g5():  # OINK speech bubble from the middle guy
+    def fr(cv):
+        x, y = head_xy(2)
+        bubble(cv, 1010, 150, 430, 210, (x + 20, y - 78), "OINK!", 120)
+    return goofy(front=fr, pigs=((300, 260, 80, -12),))
+
+
+def _g6():  # pink world: pig-pink backdrop, white word with pink edge
+    return goofy(bg_tint=(1.0, 0.55, 0.75), word_fill=((255, 255, 255), (255, 226, 240)))
+
+
+def _g7():  # comic starburst behind the title
+    def bk(cv):
+        starburst(cv, 930, 735, 560, 190)
+    return goofy(back=bk)
+
+
+def _g8():  # title on top, people lower
+    pp = dict(scale=1.6, cx=960, hy=430)
+    return goofy(ppl=pp, word_at=(900, 225), word_size=215, line2_at=(940, 360), darken=(560, 0),
+                 pigs=((1530, 140, 95, 12),), tag_at=(1690, 980), tag_rot=-5)
+
+
+def _g9():  # doodles: crown, arrows, sparkles
+    def fr(cv):
+        x, y = head_xy(2, up=110); crown(cv, x + 4, y + 40, 140)
+        doodle_arrow(cv, 1560, 170, 1040, 250, bend=70)
+        for (sx, sy, r) in ((560, 300, 26), (1340, 250, 22), (1640, 520, 30), (300, 560, 20)):
+            sparkle(cv, sx, sy, r)
+    return goofy(front=fr, pigs=())
+
+
+def _g10():  # pig sticker rain
+    pigs = ((230, 180, 85, -18), (1690, 160, 95, 16), (300, 720, 70, 10), (1660, 700, 80, -12), (1830, 420, 55, 22))
+    return goofy(pigs=pigs, word_at=(960, 790))
+
+
+GOOFY = {
+    "01_prase_levo": _g1,
+    "02_veliko_prase_iza": _g2,
+    "03_zvezdice_i_znoj": _g3,
+    "04_blato": _g4,
+    "05_oink_oblacic": _g5,
+    "06_roze_svet": _g6,
+    "07_eksplozija": _g7,
+    "08_tekst_gore": _g8,
+    "09_kruna_i_strelice": _g9,
+    "10_kisa_prasica": _g10,
+}
+
 if __name__ == "__main__":
     os.makedirs(os.path.join(base.OUT, "concepts"), exist_ok=True)
     import sys
+    if "goofy" in sys.argv:
+        os.makedirs(os.path.join(base.OUT, "goofy"), exist_ok=True)
+        only = [a for a in sys.argv[2:]]
+        for name, fn in GOOFY.items():
+            if only and not any(name.startswith(o) for o in only):
+                continue
+            img = Image.fromarray(fn())
+            path = os.path.join(base.OUT, "goofy", f"svinjac_{name}.jpg")
+            img.save(path, quality=93, subsampling=0, optimize=True)
+            print(name, os.path.getsize(path) // 1024, "KB", flush=True)
+        sys.exit(0)
     if "film" in sys.argv:
         os.makedirs(os.path.join(base.OUT, "film"), exist_ok=True)
         for name, kw in FILM.items():
