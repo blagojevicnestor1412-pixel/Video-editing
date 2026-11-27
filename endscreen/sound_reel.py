@@ -8,6 +8,8 @@ from scipy.io import wavfile
 SR, DUR = 48000, 7.0
 N = int(SR * DUR)
 rng = np.random.default_rng(11)
+LINK = os.environ.get("LINK_BUTTON", "0") == "1"   # sounds of the "LINK U BIO" button
+LG = 1.0 if LINK else 0.0                            # (functions are still called so the noise stays identical)
 mix = np.zeros((N, 2))
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_reel")
 
@@ -87,12 +89,12 @@ place(sh * np.exp(-d * 2.0) * np.clip(d / 0.03, 0, 1), 0.76, 0.06)
 place(sweep_noise(0.6, 2600, 700, lambda u: np.sin(np.pi * u) ** 2), 0.90, 0.10)
 place(sweep_noise(0.7, 800, 3600, lambda u: np.sin(np.pi * u) ** 3), 1.40, 0.14)
 place(pop(700), 2.15, 0.16, -0.4)
-place(pop(480), 2.65, 0.18, -0.3)
+place(pop(480), 2.65, 0.18 * LG, -0.3)
 place(pop(600), 2.80, 0.18, 0.3)
 # tap 1: LINK U BIO
-place(click(), 3.5, 0.24, -0.25)
-place(pluck(784), 3.56, 0.10, -0.25)
-place(pluck(1175), 3.62, 0.07, -0.25)
+place(click(), 3.5, 0.24 * LG, -0.25)
+place(pluck(784), 3.56, 0.10 * LG, -0.25)
+place(pluck(1175), 3.62, 0.07 * LG, -0.25)
 # tap 2: @10pbelgrade + hearts
 place(click(), 4.3, 0.24, 0.25)
 for k, f in enumerate((1046.5, 1318.5, 1568.0, 2093.0)):
@@ -108,7 +110,9 @@ ir /= np.abs(ir).sum(0).max() / 6
 wet = np.stack([signal.fftconvolve(mix[:, c], ir[:, c])[:N] for c in range(2)], 1)
 out = flt((mix + wet * 0.22).T, "highpass", 25).T
 out *= np.clip((DUR - t) / 0.35, 0, 1)[:, None]
-out = out / np.abs(out).max() * 10 ** (-3 / 20)
+peak = np.abs(out).max()
+print("pre-normalise peak", peak)
+out = out / peak * 10 ** (-3 / 20)
 out = np.tanh(out * 1.1) / np.tanh(1.1)
-wavfile.write(os.path.join(OUT, "sfx.wav"), SR, (out * 32767 * 0.85).astype(np.int16))
+wavfile.write(os.path.join(OUT, "sfx_link.wav" if LINK else "sfx.wav"), SR, (out * 32767 * 0.85).astype(np.int16))
 print("sound ok")

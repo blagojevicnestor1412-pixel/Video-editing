@@ -43,8 +43,10 @@ LX, LY, LS = 540, 395, 0.45            # logo centre + scale (logo layers are bu
 TITLE_Y = 705
 CARD = (120, 818, 840, 472)            # x, y, w, h (16:9)
 PILL_Y, PILL_H = 1400, 96
+# LINK_BUTTON=1 brings back the "LINK U BIO" button next to the Instagram one
+LINK_BUTTON = os.environ.get("LINK_BUTTON", "0") == "1"
 PILL_L = (120, 520)
-PILL_R = (560, 960)
+PILL_R = (560, 960) if LINK_BUTTON else (290, 790)
 TAP_L, TAP_R = 3.5, 4.3
 
 
@@ -366,12 +368,12 @@ def pill(cv, t, t_in, t_tap, span, kind):
         yt_logo(cv, x + icon_w / 2, 0)
         cv.drawString(label, x + icon_w + 18, 14, f, fill_paint(INK))
     else:
-        f = skia.Font(TF_BOLD, 44)
-        label, icon_w = "@10pbelgrade", 52
+        f = skia.Font(TF_BOLD, 44 if LINK_BUTTON else 54)
+        label, icon_w = "@10pbelgrade", (52 if LINK_BUTTON else 62)
         tw = f.measureText(label)
         x = -(icon_w + 16 + tw) / 2
-        R.draw_instagram_glyph(cv, x + icon_w / 2, 0, 0.85, 1.0)
-        cv.drawString(label, x + icon_w + 16, 15, f, fill_paint(WHITE))
+        R.draw_instagram_glyph(cv, x + icon_w / 2, 0, 0.85 if LINK_BUTTON else 1.0, 1.0)
+        cv.drawString(label, x + icon_w + 16, 15 if LINK_BUTTON else 18, f, fill_paint(WHITE))
     cv.restore()
 
 
@@ -395,15 +397,22 @@ def draw_touch(cv, t):
     if not (3.2 < t < 4.9):
         return
     lx, rx = (PILL_L[0] + PILL_L[1]) / 2 + 40, (PILL_R[0] + PILL_R[1]) / 2 + 60
-    if t < 3.45:
+    if not LINK_BUTTON:   # single button: the dot comes in from below and taps it once
+        if t < 3.9:
+            return
+        k = ease_out_cubic(prog(t, 3.9, 4.22))
+        x, y = lerp(rx + 70, rx, k), lerp(PILL_Y + 150, PILL_Y + 6, k)
+        al = ease_out_cubic(prog(t, 3.9, 4.05)) * (1 - ease_out_cubic(prog(t, 4.55, 4.85)))
+    elif t < 3.45:
         k = ease_out_cubic(prog(t, 3.2, 3.45)); x, y = lerp(lx + 60, lx, k), lerp(PILL_Y + 110, PILL_Y + 6, k)
     elif t < 3.85:
         x, y = lx, PILL_Y + 6
     else:
         k = ease_in_out_cubic(prog(t, 3.85, 4.25)); x, y = lerp(lx, rx, k), PILL_Y + 6 - math.sin(k * math.pi) * 60
-    al = ease_out_cubic(prog(t, 3.2, 3.35)) * (1 - ease_out_cubic(prog(t, 4.55, 4.85)))
+    if LINK_BUTTON:
+        al = ease_out_cubic(prog(t, 3.2, 3.35)) * (1 - ease_out_cubic(prog(t, 4.55, 4.85)))
     press = 1.0
-    for tp in (TAP_L, TAP_R):
+    for tp in ((TAP_L, TAP_R) if LINK_BUTTON else (TAP_R,)):
         d = t - tp
         if -0.06 < d < 0.25:
             press = min(press, 0.70 + 0.30 * min(1, abs(d) / 0.12))
@@ -434,15 +443,20 @@ def draw_post(cv, t, i, a):
 
 
 def render_frame(i):
+    return render_at(i / FPS, i)
+
+
+def render_at(t, grain_idx):
+    i = grain_idx
     a = assets()
-    t = i / FPS
     surf = skia.Surface(W, H)
     cv = surf.getCanvas()
     cv.clear(skia.ColorBLACK)
     draw_background(cv, t, a)
     draw_dust(cv, t, a)
     draw_card(cv, t, a)
-    pill(cv, t, 2.65, TAP_L, PILL_L, "yt")
+    if LINK_BUTTON:
+        pill(cv, t, 2.65, TAP_L, PILL_L, "yt")
     pill(cv, t, 2.80, TAP_R, PILL_R, "ig")
     draw_hearts(cv, t, a)
     draw_title(cv, t)
