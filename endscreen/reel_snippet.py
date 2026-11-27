@@ -23,9 +23,9 @@ from render import TF_MONT, clamp, ease_out_back, ease_out_cubic, prog
 W, H = 1080, 1920
 SUB_Y = 1330            # subtitle baseline (inside the Reels safe area)
 MAX_W = 860
-WHITE, YELLOW = (255, 255, 255), (255, 210, 31)
-CHUNKS = [2, 2, 2, 3, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-SHOUT_FROM = 33          # word index where the "udavi ga" shouting starts
+WHITE, HIGHLIGHT = (255, 255, 255), (176, 128, 255)   # 10th Planet purple, brightened for video
+CHUNKS = [2, 2, 2, 2, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+SHOUT_FROM = 32          # word index where the "udavi ga" shouting starts
 
 
 def clean(t):
@@ -62,7 +62,7 @@ def draw_chunk(cv, c, t):
     size = 106 if c["shout"] else 96
     font = skia.Font(TF_MONT, size)
     texts = [clean(w["text"]) for w in c["words"]]
-    space = font.measureText(" ")
+    space = font.measureText(" ") * 1.45
     widths = [font.measureText(x) for x in texts]
     total = sum(widths) + space * (len(texts) - 1)
     fit = min(1.0, MAX_W / total)
@@ -77,8 +77,8 @@ def draw_chunk(cv, c, t):
     for txt, w, wd in zip(texts, widths, c["words"]):
         active = wd["start"] - 0.03 <= t < max(wd["end"], wd["start"] + 0.12)
         pk = prog(t, wd["start"] - 0.03, wd["start"] + 0.09)
-        ws = 1 + 0.10 * math.sin(pk * math.pi) if active else 1.0
-        col = YELLOW if (active or t >= wd["end"] and c["shout"]) else WHITE
+        ws = 1 + 0.06 * math.sin(pk * math.pi) if active else 1.0
+        col = HIGHLIGHT if (active or t >= wd["end"] and c["shout"]) else WHITE
         cv.save()
         cv.translate(x + w / 2, 0)
         cv.scale(ws, ws)
